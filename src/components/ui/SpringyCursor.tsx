@@ -80,18 +80,24 @@ const SpringyCursor: React.FC<SpringyCursorProps> = ({
           loadedCount++;
 
           if (loadedCount === iconSources.length) {
-            // All images loaded → create particles
+            // Safety guard (TypeScript strict mode)
+            if (loadedImages.length === 0) return;
+
             for (let i = 0; i < nDots; i++) {
               const imgIndex = i % loadedImages.length;
+
+              // Direct indexed access after length guard
               particlesRef.current[i] = new Particle(
-                loadedImages[imgIndex]
+                loadedImages[imgIndex] as HTMLImageElement
               );
             }
+
 
             bindEvents();
             loop();
           }
         };
+
 
         img.onerror = () => {
           console.error("Failed to load icon:", src);
@@ -253,23 +259,22 @@ const SpringyCursor: React.FC<SpringyCursorProps> = ({
         spring.Y += (dy / len) * springF;
       }
     }
-
     class Particle {
       position: { x: number; y: number };
       velocity: { x: number; y: number };
-      canv: HTMLCanvasElement;
+      img: HTMLImageElement;
 
-      constructor(canvasItem: HTMLCanvasElement) {
+      constructor(imageItem: HTMLImageElement) {
         this.position = { x: cursorRef.current.x, y: cursorRef.current.y };
         this.velocity = { x: 0, y: 0 };
-        this.canv = canvasItem;
+        this.img = imageItem;
       }
 
       draw(context: CanvasRenderingContext2D) {
-        const size = 28;
+        const size = 18; // fixed size for all icons
 
         context.drawImage(
-          this.canv,
+          this.img,
           this.position.x - size / 2,
           this.position.y - size / 2,
           size,
