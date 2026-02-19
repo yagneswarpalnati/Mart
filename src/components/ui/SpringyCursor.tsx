@@ -9,7 +9,7 @@ interface SpringyCursorProps {
 }
 
 const SpringyCursor: React.FC<SpringyCursorProps> = ({
-  icons = [ 'icons/icecream.svg','/icons/avacado.svg', 'icons/onion.svg','icons/kiwi.svg','icons/corn.svg','icons/mango.svg'],
+  icons = [ '/icons/icecream.svg','/icons/avacado.svg', '/icons/onion.svg','/icons/kiwi.svg','/icons/corn.svg','/icons/mango.svg'],
   wrapperElement,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -54,17 +54,15 @@ const SpringyCursor: React.FC<SpringyCursorProps> = ({
       canvas.style.left = "0px";
       canvas.style.pointerEvents = "none";
 
-      if (wrapperElement) {
-        canvas.style.position = "absolute";
-        wrapperElement.appendChild(canvas);
-        canvas.width = wrapperElement.clientWidth;
-        canvas.height = wrapperElement.clientHeight;
-      } else {
-        canvas.style.position = "fixed";
-        document.body.appendChild(canvas);
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
+      canvas.style.position = "fixed";
+      canvas.style.top = "0px";
+      canvas.style.left = "0px";
+      canvas.style.pointerEvents = "none";
+      canvas.style.zIndex = "9999";
+
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
 
       // 🔥 Load SVG icons
       const loadedImages: HTMLImageElement[] = [];
@@ -285,19 +283,19 @@ const SpringyCursor: React.FC<SpringyCursorProps> = ({
 
     init();
 
+    
     return () => {
-      if (canvas) {
-        canvas.remove();
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      const element = wrapperElement || document.body;
-      element.removeEventListener('mousemove', onMouseMove);
-      element.removeEventListener('touchmove', onTouchMove);
-      element.removeEventListener('touchstart', onTouchMove);
-      window.removeEventListener('resize', onWindowResize);
-    };
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+
+        const element = wrapperElement || document.body;
+        element.removeEventListener("mousemove", onMouseMove);
+        element.removeEventListener("touchmove", onTouchMove);
+        element.removeEventListener("touchstart", onTouchMove);
+        window.removeEventListener("resize", onWindowResize);
+      };
+
   }, [icons, wrapperElement]);
 
   return <canvas ref={canvasRef} />;
