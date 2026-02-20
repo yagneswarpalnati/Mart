@@ -1,10 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import PageWrapper from "@/components/layout/PageWrapper";
-import { dailyRecommended } from "@/data/nutrition";
+import useSWR from "swr";
+
+// ─── Products Interface ─────────────────────────────
+interface DashboardProduct {
+  id: number;
+  name: string;
+  emoji: string;
+  price: number;
+  category: string;
+  route: string;
+  flavor?: string;
+}
 
 // ─── Greeting Logic ────────────────────────────────
 function getGreeting(): { text: string; emoji: string; subtext: string } {
@@ -18,45 +29,6 @@ function getGreeting(): { text: string; emoji: string; subtext: string } {
   }
 }
 
-// ─── Nutrition Progress Ring ──────────────────────
-function ProgressRing({ label, value, max, unit, color, delay }: {
-  label: string; value: number; max: number; unit: string; color: string; delay: number;
-}) {
-  const radius = 45;
-  const circumference = 2 * Math.PI * radius;
-  const percentage = Math.min((value / max) * 100, 100);
-  const dashOffset = circumference - (percentage / 100) * circumference;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay, duration: 0.5 }}
-      className="flex flex-col items-center gap-3"
-    >
-      <div className="relative w-28 h-28">
-        <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
-          <circle
-            cx="50" cy="50" r={radius} fill="none"
-            stroke={color} strokeWidth="8" strokeLinecap="round"
-            strokeDasharray={circumference}
-            style={{ "--circumference": circumference, "--dash-offset": dashOffset } as React.CSSProperties}
-            className="progress-ring-circle"
-            strokeDashoffset={circumference}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-lg font-bold text-white">{Math.round(percentage)}%</span>
-        </div>
-      </div>
-      <div className="text-center">
-        <p className="text-xs font-semibold text-white/80 uppercase tracking-wider">{label}</p>
-        <p className="text-[11px] text-white/40 mt-0.5">{value}{unit} / {max}{unit}</p>
-      </div>
-    </motion.div>
-  );
-}
 
 // ─── Category Cards ───────────────────────────────
 const categories = [
@@ -66,21 +38,32 @@ const categories = [
   { name: "Ice Creams", emoji: "🍦", path: "/icecreams", desc: "Cheat day & kid's favourites", gradient: "from-pink-600/20 to-purple-800/20", glow: "rgba(236,72,153,0.3)" },
 ];
 
-// ─── Simulated Consumed Data (can be replaced by real state later) ──
-const consumed = {
-  vitaminC: 42,
-  protein: 28,
-  fiber: 12,
-  calcium: 450,
-  iron: 8,
-};
-
 export default function DashboardPage() {
   const [greeting, setGreeting] = useState(getGreeting());
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     setGreeting(getGreeting());
   }, []);
+
+  const fetcher = (url: string) => fetch(url).then(res => res.json());
+  const { data: allProducts } = useSWR<DashboardProduct[]>("/api/products", fetcher);
+
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim() || !allProducts) return [];
+    const query = searchQuery.toLowerCase();
+    return allProducts.filter(p => {
+      const routeMap: Record<string, string> = {
+        vegetable: "/vegetables",
+        fruit: "/fruits",
+        salad: "/salads",
+        icecream: "/icecreams"
+      };
+      p.route = routeMap[p.category] || "/dashboard";
+      return p.name.toLowerCase().includes(query) || 
+             (p.flavor?.toLowerCase().includes(query));
+    }).slice(0, 5);
+  }, [searchQuery, allProducts]);
 
   return (
     <PageWrapper>
@@ -98,7 +81,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-14"
+            className="text-center mb-10"
           >
             <div className="text-5xl mb-4 animate-float">{greeting.emoji}</div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight mb-3">
@@ -106,7 +89,45 @@ export default function DashboardPage() {
                 {greeting.text}, Customer!
               </span>
             </h1>
-            <p className="text-white/50 text-lg max-w-md mx-auto">{greeting.subtext}</p>
+            <p className="text-white/50 text-lg max-w-md mx-auto mb-8">{greeting.subtext}</p>
+            
+            {/* ── Search Bar ── */}
+            <div className="relative max-w-xl mx-auto z-50">
+              <div className="relative group">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl opacity-50 group-focus-within:opacity-100 transition-opacity">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search fresh vegetables, fruits, salads..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-white/[0.05] border border-white/[0.1] rounded-2xl pl-12 pr-4 py-4 text-white placeholder:text-white/30 outline-none focus:border-emerald-500/50 focus:bg-white/[0.08] transition-all shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
+                />
+              </div>
+
+              <AnimatePresence>
+                {searchResults.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute top-full left-0 right-0 mt-2 glass-card border border-emerald-500/20 overflow-hidden text-left shadow-2xl"
+                  >
+                    {searchResults.map((result) => (
+                      <Link key={`${result.category}-${result.id}`} href={result.route}>
+                        <div className="flex items-center gap-3 p-3 hover:bg-white/[0.06] transition-colors border-b border-white/[0.05] last:border-0 cursor-pointer">
+                          <span className="text-3xl">{result.emoji}</span>
+                          <div>
+                            <p className="text-white font-bold">{result.name}</p>
+                            <p className="text-xs text-white/40 capitalize">{result.category} • ₹{result.price}</p>
+                          </div>
+                          <span className="ml-auto text-emerald-400/50">→</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </motion.div>
 
           {/* ── Tagline Banner ── */}
@@ -122,26 +143,7 @@ export default function DashboardPage() {
             </p>
           </motion.div>
 
-          {/* ── Nutrition Tracker ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-            className="mb-16"
-          >
-            <h2 className="text-xl font-semibold text-white/90 mb-2 text-center">Today&apos;s Nutrition Tracker</h2>
-            <p className="text-sm text-white/40 text-center mb-8">Track your daily vitamins & protein intake</p>
 
-            <div className="glass-card p-8">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 justify-items-center">
-                <ProgressRing label="Vitamin C" value={consumed.vitaminC} max={dailyRecommended.vitaminC} unit="mg" color="#10b981" delay={0.5} />
-                <ProgressRing label="Protein" value={consumed.protein} max={dailyRecommended.protein} unit="g" color="#14b8a6" delay={0.6} />
-                <ProgressRing label="Fiber" value={consumed.fiber} max={dailyRecommended.fiber} unit="g" color="#8b5cf6" delay={0.7} />
-                <ProgressRing label="Calcium" value={consumed.calcium} max={dailyRecommended.calcium} unit="mg" color="#f59e0b" delay={0.8} />
-                <ProgressRing label="Iron" value={consumed.iron} max={dailyRecommended.iron} unit="mg" color="#ef4444" delay={0.9} />
-              </div>
-            </div>
-          </motion.div>
 
           {/* ── Category Cards ── */}
           <div>

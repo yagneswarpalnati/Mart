@@ -3,25 +3,30 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageWrapper from "@/components/layout/PageWrapper";
-import { fruits, priorityConfig } from "@/data/nutrition";
+import { priorityConfig } from "@/data/nutrition";
+import useSWR from "swr";
+import { useCart } from "@/context/CartContext";
 
 export default function FruitsPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [quantities, setQuantities] = useState<Record<number, number>>({});
-  const [addedToCart, setAddedToCart] = useState<Record<number, boolean>>({});
+  const { addItem, getItemQuantity } = useCart();
 
   const updateQty = (id: number, delta: number) => {
     setQuantities((prev) => ({ ...prev, [id]: Math.max(1, (prev[id] || 1) + delta) }));
   };
 
-  const handleAddToCart = (id: number) => {
-    setAddedToCart((prev) => ({ ...prev, [id]: true }));
-    setTimeout(() => setAddedToCart((prev) => ({ ...prev, [id]: false })), 2000);
+  const fetcher = (url: string) => fetch(url).then(res => res.json());
+  const { data: fruits, error, isLoading } = useSWR("/api/products?category=fruit", fetcher);
+
+  const handleAddToCart = (fruit: any) => {
+    const qty = quantities[fruit.id] || 1;
+    addItem({ id: fruit.id, name: fruit.name, emoji: fruit.emoji, price: fruit.price, quantity: qty, category: "fruit", unit: "kg" });
   };
 
   return (
     <PageWrapper>
-      <div className="relative min-h-screen overflow-hidden">
+      <div className="relative min-h-screen overflow-hidden pb-24">
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
         <div className="absolute inset-0 bg-gradient-to-br from-red-950/30 via-transparent to-orange-950/30" />
         <div className="absolute top-20 left-0 w-[500px] h-[500px] rounded-full bg-red-500/[0.05] blur-[120px]" />
@@ -34,16 +39,26 @@ export default function FruitsPage() {
               Fresh Fruits
             </h1>
             <p className="text-white/40 text-base max-w-lg mx-auto">
-              Nature&apos;s sweetest vitamins — picked fresh, delivered fast. See every nutrient per kg before you buy!
+              Nature&apos;s sweetest vitamins — picked fresh, delivered fast. See every nutrient per kg!
             </p>
           </motion.div>
 
+          {/* Loader or Error */}
+          {isLoading && (
+            <div className="flex justify-center items-center py-20">
+              <div className="w-12 h-12 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+            </div>
+          )}
+          {error && <div className="text-center text-red-400 py-10">Failed to load fruits</div>}
+
           {/* Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {fruits.map((fruit, i) => {
+          {!isLoading && !error && (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {fruits?.map((fruit: any, i: number) => {
               const isExpanded = expandedId === fruit.id;
               const qty = quantities[fruit.id] || 1;
-              const priority = priorityConfig[fruit.priority];
+              const priority = priorityConfig[fruit.priority as keyof typeof priorityConfig] || priorityConfig["good-choice"];
+              const inCart = getItemQuantity(fruit.id);
 
               return (
                 <motion.div
@@ -53,7 +68,12 @@ export default function FruitsPage() {
                   transition={{ delay: i * 0.08, duration: 0.5 }}
                   className="glass-card p-6 flex flex-col"
                 >
-                  {/* Top Row: Emoji + Info */}
+                  {inCart > 0 && (
+                    <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30 text-orange-400 text-[10px] font-bold">
+                      {inCart} in cart
+                    </div>
+                  )}
+
                   <div className="flex items-start gap-4 mb-4">
                     <div className="text-5xl flex-shrink-0">{fruit.emoji}</div>
                     <div className="flex-1 min-w-0">
@@ -62,12 +82,16 @@ export default function FruitsPage() {
                         <span className={`text-[11px] px-2 py-0.5 rounded-full border font-semibold ${priority.bg} ${priority.color}`}>
                           {priority.label}
                         </span>
+                        {fruit.isTrending && (
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 text-orange-400 font-bold flex items-center gap-1">
+                            🔥 Trending
+                          </span>
+                        )}
                       </div>
                       <p className="text-orange-400 font-semibold text-lg">₹{fruit.price}<span className="text-xs text-white/40 ml-1">/ kg</span></p>
                     </div>
                   </div>
 
-                  {/* Nutrition Grid */}
                   <div className="grid grid-cols-4 gap-2 mb-4">
                     {[
                       { label: "Vit A", value: `${fruit.nutrition.vitaminA}mg`, type: "emerald" },
@@ -85,7 +109,6 @@ export default function FruitsPage() {
                     ))}
                   </div>
 
-                  {/* Why This Fruit? */}
                   <button
                     onClick={() => setExpandedId(isExpanded ? null : fruit.id)}
                     className="text-left text-sm text-orange-400/80 hover:text-orange-300 transition-colors mb-3 flex items-center gap-1 cursor-pointer"
@@ -111,7 +134,6 @@ export default function FruitsPage() {
 
                   <div className="flex-1" />
 
-                  {/* Quantity + Add to Cart */}
                   <div className="flex items-center justify-between mt-2">
                     <div className="flex items-center gap-3">
                       <button onClick={() => updateQty(fruit.id, -1)} className="qty-btn">−</button>
@@ -121,17 +143,18 @@ export default function FruitsPage() {
                     </div>
 
                     <button
-                      onClick={() => handleAddToCart(fruit.id)}
-                      className={`btn-premium text-xs !px-5 !py-2.5 ${addedToCart[fruit.id] ? "!bg-orange-600" : ""}`}
-                      style={!addedToCart[fruit.id] ? { background: "linear-gradient(135deg, #f97316, #ef4444)" } : undefined}
+                      onClick={() => handleAddToCart(fruit)}
+                      className="btn-premium text-xs !px-5 !py-2.5"
+                      style={{ background: "linear-gradient(135deg, #f97316, #ef4444)" }}
                     >
-                      {addedToCart[fruit.id] ? "✓ Added!" : "Add to Cart"}
+                      Add to Cart
                     </button>
                   </div>
                 </motion.div>
               );
             })}
           </div>
+          )}
         </div>
       </div>
     </PageWrapper>

@@ -3,25 +3,30 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageWrapper from "@/components/layout/PageWrapper";
-import { vegetables, priorityConfig } from "@/data/nutrition";
+import { priorityConfig } from "@/data/nutrition";
+import useSWR from "swr";
+import { useCart } from "@/context/CartContext";
 
 export default function VegetablesPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [quantities, setQuantities] = useState<Record<number, number>>({});
-  const [addedToCart, setAddedToCart] = useState<Record<number, boolean>>({});
+  const { addItem, getItemQuantity } = useCart();
 
   const updateQty = (id: number, delta: number) => {
     setQuantities((prev) => ({ ...prev, [id]: Math.max(1, (prev[id] || 1) + delta) }));
   };
 
-  const handleAddToCart = (id: number) => {
-    setAddedToCart((prev) => ({ ...prev, [id]: true }));
-    setTimeout(() => setAddedToCart((prev) => ({ ...prev, [id]: false })), 2000);
+  const fetcher = (url: string) => fetch(url).then(res => res.json());
+  const { data: vegetables, error, isLoading } = useSWR("/api/products?category=vegetable", fetcher);
+
+  const handleAddToCart = (veg: any) => {
+    const qty = quantities[veg.id] || 1;
+    addItem({ id: veg.id, name: veg.name, emoji: veg.emoji, price: veg.price, quantity: qty, category: "vegetable", unit: "kg" });
   };
 
   return (
     <PageWrapper>
-      <div className="relative min-h-screen overflow-hidden">
+      <div className="relative min-h-screen overflow-hidden pb-24">
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/40 via-transparent to-green-950/30" />
         <div className="absolute top-20 right-0 w-[500px] h-[500px] rounded-full bg-emerald-500/[0.05] blur-[120px]" />
@@ -38,12 +43,22 @@ export default function VegetablesPage() {
             </p>
           </motion.div>
 
+          {/* Loader or Error */}
+          {isLoading && (
+            <div className="flex justify-center items-center py-20">
+              <div className="w-12 h-12 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+            </div>
+          )}
+          {error && <div className="text-center text-red-400 py-10">Failed to load vegetables</div>}
+
           {/* Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {vegetables.map((veg, i) => {
+          {!isLoading && !error && (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {vegetables?.map((veg: any, i: number) => {
               const isExpanded = expandedId === veg.id;
               const qty = quantities[veg.id] || 1;
-              const priority = priorityConfig[veg.priority];
+              const priority = priorityConfig[veg.priority as keyof typeof priorityConfig] || priorityConfig["good-choice"];
+              const inCart = getItemQuantity(veg.id);
 
               return (
                 <motion.div
@@ -53,6 +68,13 @@ export default function VegetablesPage() {
                   transition={{ delay: i * 0.08, duration: 0.5 }}
                   className="glass-card p-6 flex flex-col"
                 >
+                  {/* In-cart badge */}
+                  {inCart > 0 && (
+                    <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
+                      {inCart} in cart
+                    </div>
+                  )}
+
                   {/* Top Row: Emoji + Info */}
                   <div className="flex items-start gap-4 mb-4">
                     <div className="text-5xl flex-shrink-0">{veg.emoji}</div>
@@ -62,6 +84,11 @@ export default function VegetablesPage() {
                         <span className={`text-[11px] px-2 py-0.5 rounded-full border font-semibold ${priority.bg} ${priority.color}`}>
                           {priority.label}
                         </span>
+                        {veg.isTrending && (
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 text-orange-400 font-bold flex items-center gap-1">
+                            🔥 Trending
+                          </span>
+                        )}
                       </div>
                       <p className="text-emerald-400 font-semibold text-lg">₹{veg.price}<span className="text-xs text-white/40 ml-1">/ kg</span></p>
                     </div>
@@ -109,7 +136,6 @@ export default function VegetablesPage() {
                     )}
                   </AnimatePresence>
 
-                  {/* Spacer */}
                   <div className="flex-1" />
 
                   {/* Quantity + Add to Cart */}
@@ -121,17 +147,15 @@ export default function VegetablesPage() {
                       <span className="text-xs text-white/30">kg</span>
                     </div>
 
-                    <button
-                      onClick={() => handleAddToCart(veg.id)}
-                      className={`btn-premium text-xs !px-5 !py-2.5 ${addedToCart[veg.id] ? "!bg-emerald-600" : ""}`}
-                    >
-                      {addedToCart[veg.id] ? "✓ Added!" : "Add to Cart"}
+                    <button onClick={() => handleAddToCart(veg)} className="btn-premium text-xs !px-5 !py-2.5">
+                      Add to Cart
                     </button>
                   </div>
                 </motion.div>
               );
             })}
           </div>
+          )}
         </div>
       </div>
     </PageWrapper>

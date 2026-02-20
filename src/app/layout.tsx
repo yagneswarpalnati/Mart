@@ -1,6 +1,6 @@
-import SpringyCursor from "@/components/ui/SpringyCursor";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
+import ClientLayout from "@/components/layout/ClientLayout";
 
 export default function RootLayout({
   children,
@@ -10,9 +10,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="bg-black text-white min-h-screen overflow-x-hidden">
-        <Navbar />
-        <SpringyCursor/>
-        {children}
+        <ClientLayout>
+          <Navbar />
+          {children}
+        </ClientLayout>
       </body>
     </html>
   );

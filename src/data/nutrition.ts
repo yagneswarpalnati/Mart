@@ -18,6 +18,7 @@ export interface Product {
   benefit: string;       // "Why this vegetable/fruit?"
   priority: "must-have" | "recommended" | "good-choice";
   category: "vegetable" | "fruit" | "salad" | "icecream";
+  isTrending?: boolean;
 }
 
 export interface Salad {
@@ -29,6 +30,7 @@ export interface Salad {
   nutrition: NutritionInfo;
   benefit: string;
   category: "salad";
+  isTrending?: boolean;
 }
 
 export interface IceCream {
@@ -41,6 +43,7 @@ export interface IceCream {
   mood: ("kid-favourite" | "cheat-day" | "guilt-free")[];
   calories: number;
   category: "icecream";
+  isTrending?: boolean;
 }
 
 // ─── Daily Recommended Values ─────────────────────
@@ -65,6 +68,7 @@ export const vegetables: Product[] = [
     benefit: "Spinach is a superfood packed with iron and Vitamin K. It strengthens bones, boosts immunity, and improves blood circulation. A must for daily health!",
     priority: "must-have",
     category: "vegetable",
+    isTrending: true,
   },
   {
     id: 2,
@@ -159,6 +163,7 @@ export const fruits: Product[] = [
     benefit: "An apple a day keeps the doctor away! Rich in pectin fiber, apples improve digestion, lower cholesterol, and support weight management.",
     priority: "must-have",
     category: "fruit",
+    isTrending: true,
   },
   {
     id: 103,
@@ -233,6 +238,7 @@ export const salads: Salad[] = [
     nutrition: { vitaminA: 1.2, vitaminC: 150, vitaminK: 0.3, iron: 5, calcium: 350, protein: 15, fiber: 8 },
     benefit: "A Mediterranean classic packed with healthy fats, antioxidants, and hydrating vegetables. Perfect for heart health!",
     category: "salad",
+    isTrending: true,
   },
   {
     id: 202,
@@ -298,6 +304,7 @@ export const icecreams: IceCream[] = [
     mood: ["kid-favourite"],
     calories: 207,
     category: "icecream",
+    isTrending: true,
   },
   {
     id: 302,

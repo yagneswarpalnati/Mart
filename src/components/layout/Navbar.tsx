@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCart } from "@/context/CartContext";
 
 const navItems = [
   { name: "Dashboard", path: "/dashboard", emoji: "🏠" },
@@ -19,8 +20,9 @@ const navItems = [
 export default function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { totalItems } = useCart();
 
-  if (pathname === "/login" || pathname === "/") return null;
+  if (pathname === "/") return null;
 
   return (
     <nav className="sticky top-0 z-50 backdrop-blur-2xl border-b border-white/[0.06]"
@@ -50,6 +52,9 @@ export default function Navbar() {
               >
                 <span className="text-base">{item.emoji}</span>
                 <span>{item.name}</span>
+                {item.name === "Cart" && totalItems > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center -ml-0.5">{totalItems}</span>
+                )}
                 {isActive && (
                   <motion.div layoutId="nav-active"
                     className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-gradient-to-r from-emerald-400 to-teal-400"
