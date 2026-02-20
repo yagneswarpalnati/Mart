@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import PageWrapper from "@/components/layout/PageWrapper";
-import useSWR from "swr";
+import { vegetables, fruits, salads, icecreams } from "@/data/nutrition";
 
 // ─── Products Interface ─────────────────────────────
 interface DashboardProduct {
@@ -46,20 +46,31 @@ export default function DashboardPage() {
     setGreeting(getGreeting());
   }, []);
 
-  const fetcher = (url: string) => fetch(url).then(res => res.json());
-  const { data: allProducts } = useSWR<DashboardProduct[]>("/api/products", fetcher);
+  const allProducts = useMemo(() => {
+    const routeMap: Record<string, string> = {
+      vegetable: "/vegetables",
+      fruit: "/fruits",
+      salad: "/salads",
+      icecream: "/icecreams"
+    };
+
+    const combined = [
+      ...vegetables.map(v => ({ ...v, category: "vegetable" })),
+      ...fruits.map(f => ({ ...f, category: "fruit" })),
+      ...salads.map(s => ({ ...s, category: "salad" })),
+      ...icecreams.map(i => ({ ...i, category: "icecream" }))
+    ];
+
+    return combined.map(p => ({
+      ...p,
+      route: routeMap[p.category] || "/dashboard"
+    })) as DashboardProduct[];
+  }, []);
 
   const searchResults = useMemo(() => {
-    if (!searchQuery.trim() || !allProducts) return [];
+    if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase();
     return allProducts.filter(p => {
-      const routeMap: Record<string, string> = {
-        vegetable: "/vegetables",
-        fruit: "/fruits",
-        salad: "/salads",
-        icecream: "/icecreams"
-      };
-      p.route = routeMap[p.category] || "/dashboard";
       return p.name.toLowerCase().includes(query) || 
              (p.flavor?.toLowerCase().includes(query));
     }).slice(0, 5);

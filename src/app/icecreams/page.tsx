@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import PageWrapper from "@/components/layout/PageWrapper";
-import { moodConfig } from "@/data/nutrition";
-import useSWR from "swr";
+import { icecreams, moodConfig } from "@/data/nutrition";
 import { useCart } from "@/context/CartContext";
 
 export default function IceCreamsPage() {
@@ -14,9 +13,6 @@ export default function IceCreamsPage() {
   const updateQty = (id: number, delta: number) => {
     setQuantities((prev) => ({ ...prev, [id]: Math.max(1, (prev[id] || 1) + delta) }));
   };
-
-  const fetcher = (url: string) => fetch(url).then(res => res.json());
-  const { data: icecreams, error, isLoading } = useSWR("/api/products?category=icecream", fetcher);
 
   const handleAddToCart = (ic: any) => {
     const qty = quantities[ic.id] || 1;
@@ -50,16 +46,8 @@ export default function IceCreamsPage() {
             ))}
           </motion.div>
 
-          {/* Loader or Error */}
-          {isLoading && (
-            <div className="flex justify-center items-center py-20">
-              <div className="w-12 h-12 rounded-full border-4 border-pink-500/20 border-t-pink-500 animate-spin" />
-            </div>
-          )}
-          {error && <div className="text-center text-red-400 py-10">Failed to load ice creams</div>}
-
-          {!isLoading && !error && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {/* Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {icecreams?.map((ic: any, i: number) => {
               const qty = quantities[ic.id] || 1;
               const inCart = getItemQuantity(ic.id);
@@ -141,7 +129,6 @@ export default function IceCreamsPage() {
               );
             })}
           </div>
-          )}
         </div>
       </div>
     </PageWrapper>
