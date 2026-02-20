@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageWrapper from "@/components/layout/PageWrapper";
-import useSWR from "swr";
+import { salads } from "@/data/nutrition";
 import { useCart } from "@/context/CartContext";
 
 export default function SaladsPage() {
@@ -14,9 +14,6 @@ export default function SaladsPage() {
   const updateQty = (id: number, delta: number) => {
     setQuantities((prev) => ({ ...prev, [id]: Math.max(1, (prev[id] || 1) + delta) }));
   };
-
-  const fetcher = (url: string) => fetch(url).then(res => res.json());
-  const { data: salads, error, isLoading } = useSWR("/api/products?category=salad", fetcher);
 
   const handleAddToCart = (salad: any) => {
     const qty = quantities[salad.id] || 1;
@@ -41,16 +38,8 @@ export default function SaladsPage() {
             </p>
           </motion.div>
 
-          {/* Loader or Error */}
-          {isLoading && (
-            <div className="flex justify-center items-center py-20">
-              <div className="w-12 h-12 rounded-full border-4 border-lime-500/20 border-t-lime-500 animate-spin" />
-            </div>
-          )}
-          {error && <div className="text-center text-red-400 py-10">Failed to load salads</div>}
-
-          {!isLoading && !error && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {/* Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {salads?.map((salad: any, i: number) => {
               const isExpanded = expandedId === salad.id;
               const qty = quantities[salad.id] || 1;
@@ -154,7 +143,6 @@ export default function SaladsPage() {
               );
             })}
           </div>
-          )}
         </div>
       </div>
     </PageWrapper>

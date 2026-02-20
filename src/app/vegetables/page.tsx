@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageWrapper from "@/components/layout/PageWrapper";
-import { priorityConfig } from "@/data/nutrition";
-import useSWR from "swr";
+import { vegetables, priorityConfig } from "@/data/nutrition";
 import { useCart } from "@/context/CartContext";
 
 export default function VegetablesPage() {
@@ -15,9 +14,6 @@ export default function VegetablesPage() {
   const updateQty = (id: number, delta: number) => {
     setQuantities((prev) => ({ ...prev, [id]: Math.max(1, (prev[id] || 1) + delta) }));
   };
-
-  const fetcher = (url: string) => fetch(url).then(res => res.json());
-  const { data: vegetables, error, isLoading } = useSWR("/api/products?category=vegetable", fetcher);
 
   const handleAddToCart = (veg: any) => {
     const qty = quantities[veg.id] || 1;
@@ -43,17 +39,8 @@ export default function VegetablesPage() {
             </p>
           </motion.div>
 
-          {/* Loader or Error */}
-          {isLoading && (
-            <div className="flex justify-center items-center py-20">
-              <div className="w-12 h-12 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-            </div>
-          )}
-          {error && <div className="text-center text-red-400 py-10">Failed to load vegetables</div>}
-
           {/* Grid */}
-          {!isLoading && !error && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {vegetables?.map((veg: any, i: number) => {
               const isExpanded = expandedId === veg.id;
               const qty = quantities[veg.id] || 1;
@@ -155,7 +142,6 @@ export default function VegetablesPage() {
               );
             })}
           </div>
-          )}
         </div>
       </div>
     </PageWrapper>
