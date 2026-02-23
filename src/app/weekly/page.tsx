@@ -193,44 +193,55 @@ export default function WeeklyPage() {
           </div>
 
           {/* Main Content: Day Plan + Add Items */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Day Plan (2/3 width) */}
-            <div className="lg:col-span-2 glass-card p-6 min-h-[300px]">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white">{dayEmojis[days.indexOf(activeDay)]} {activeDay}&apos;s Plan</h3>
+          {/* Main Content: Day Plan + Add Items */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            {/* Day Plan (2/3 width on desktop) */}
+            <div className="lg:col-span-2 glass-card p-6 min-h-[400px] flex flex-col">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col">
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                    {activeDay} Plan
+                  </h3>
+                  <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">
+                    {dayEmojis[days.indexOf(activeDay)]} Custom Layout
+                  </span>
+                </div>
                 <button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="lg:hidden btn-premium text-xs !px-4 !py-2"
+                  className="lg:hidden h-10 px-4 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-black uppercase tracking-widest active:scale-95 transition-all"
                 >
-                  + Add Items
+                  Edit Plan
                 </button>
               </div>
 
               {plan[activeDay].length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-white/30">
-                  <span className="text-4xl mb-3">🍽️</span>
-                  <p className="text-sm">No items planned for {activeDay}.</p>
-                  <p className="text-xs mt-1">Add items from the sidebar to plan your day!</p>
+                <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-4xl mb-4 border border-white/5">🍽️</div>
+                  <p className="text-white font-bold text-sm">Nothing planned for {activeDay}</p>
+                  <p className="text-white/30 text-xs mt-1 max-w-[200px]">Add your favorite essentials to build your weekly healthy routine.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <AnimatePresence>
+                  <AnimatePresence mode="popLayout">
                     {plan[activeDay].map((item) => (
                       <motion.div
                         key={item.id}
+                        layout
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.08] group"
+                        className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] group hover:bg-white/[0.08] transition-colors"
                       >
-                        <span className="text-2xl">{item.emoji}</span>
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-white/5 to-transparent flex items-center justify-center text-2xl border border-white/5">
+                          {item.emoji}
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-white">{item.name}</p>
-                          <p className="text-[11px] text-white/40 capitalize">{item.category}</p>
+                          <p className="text-sm font-bold text-white truncate">{item.name}</p>
+                          <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">{item.category}</p>
                         </div>
                         <button
                           onClick={() => removeItem(activeDay, item.id)}
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
                         >
                           ✕
                         </button>
@@ -241,58 +252,61 @@ export default function WeeklyPage() {
               )}
             </div>
 
-            {/* Add Items Sidebar (1/3 width) */}
-            <div className={`glass-card p-5 lg:block ${sidebarOpen ? "block" : "hidden"}`}>
-              <h3 className="text-sm font-bold text-white/80 uppercase tracking-wider mb-3">Add Items</h3>
+            {/* Add Items Sidebar (1/3 width on desktop) */}
+            <div className={`flex flex-col gap-4 lg:flex ${sidebarOpen ? "flex" : "hidden"}`}>
+              <div className="glass-card p-5">
+                <h3 className="text-xs font-black text-white/40 uppercase tracking-[0.2em] mb-4">Stock Pantry</h3>
 
-              {/* Category Filter */}
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {[
-                  { key: "all", label: "All" },
-                  { key: "vegetable", label: "🥦 Veg" },
-                  { key: "fruit", label: "🍎 Fruit" },
-                  { key: "salad", label: "🥗 Salad" },
-                  { key: "icecream", label: "🍦 Ice Cream" },
-                ].map((cat) => (
-                  <button
-                    key={cat.key}
-                    onClick={() => setFilterCat(cat.key)}
-                    className={`text-[11px] px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                      filterCat === cat.key
-                        ? "bg-violet-500/20 text-violet-400 border border-violet-500/30"
-                        : "bg-white/[0.04] text-white/50 border border-white/[0.06] hover:text-white/80"
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Items List */}
-              <div className="flex flex-col gap-1.5 max-h-[400px] overflow-y-auto pr-1">
-                {filteredItems.map((item) => {
-                  const isAdded = plan[activeDay].some((i) => i.id === item.id);
-                  return (
+                {/* Category Filter */}
+                <div className="flex flex-wrap gap-1.5 mb-5">
+                  {[
+                    { key: "all", label: "All" },
+                    { key: "vegetable", label: "🥦 Veg" },
+                    { key: "fruit", label: "🍎 Fruit" },
+                    { key: "salad", label: "🥗 Salad" },
+                  ].map((cat) => (
                     <button
-                      key={item.id}
-                      onClick={() => !isAdded && addItem(activeDay, item)}
-                      disabled={isAdded}
-                      className={`flex items-center gap-2 p-2.5 rounded-xl text-left transition-all text-sm ${
-                        isAdded
-                          ? "bg-emerald-500/10 text-emerald-400/60 cursor-default"
-                          : "bg-white/[0.02] text-white/70 hover:bg-white/[0.06] cursor-pointer"
+                      key={cat.key}
+                      onClick={() => setFilterCat(cat.key)}
+                      className={`text-[10px] px-3 py-1.5 rounded-xl font-bold uppercase transition-all cursor-pointer ${
+                        filterCat === cat.key
+                          ? "bg-violet-500 text-black shadow-lg shadow-violet-500/20"
+                          : "bg-white/[0.04] text-white/40 border border-white/[0.08] hover:text-white/80"
                       }`}
                     >
-                      <span className="text-lg">{item.emoji}</span>
-                      <span className="flex-1">{item.name}</span>
-                      {isAdded ? (
-                        <span className="text-[10px] text-emerald-400">✓</span>
-                      ) : (
-                        <span className="text-[10px] text-white/30">+</span>
-                      )}
+                      {cat.label}
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
+
+                {/* Items List */}
+                <div className="flex flex-col gap-2 max-h-[500px] overflow-y-auto pr-1 no-scrollbar">
+                  {filteredItems.map((item) => {
+                    const isAdded = plan[activeDay].some((i) => i.id === item.id);
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => !isAdded && addItem(activeDay, item)}
+                        disabled={isAdded}
+                        className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all ${
+                          isAdded
+                            ? "bg-emerald-500/10 border border-emerald-500/20 opacity-60"
+                            : "bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.08] cursor-pointer"
+                        }`}
+                      >
+                        <span className="text-xl">{item.emoji}</span>
+                        <div className="flex-1">
+                          <p className={`text-sm font-bold ${isAdded ? 'text-emerald-400' : 'text-white'}`}>{item.name}</p>
+                        </div>
+                        {isAdded ? (
+                          <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] text-black font-black">✓</div>
+                        ) : (
+                          <div className="w-5 h-5 rounded-full border border-white/20 flex items-center justify-center text-[10px] text-white/40">+</div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>

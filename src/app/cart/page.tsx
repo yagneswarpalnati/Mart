@@ -166,105 +166,79 @@ export default function CartPage() {
                   {items.map((item) => (
                     <motion.div
                       key={item.id}
-                      initial={{ opacity: 0, x: -20 }}
+                      initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20, height: 0 }}
-                      className="glass-card p-4 flex items-center gap-4 group"
+                      className="glass-card p-3 flex items-center gap-3 active:bg-white/5 transition-colors"
                     >
-                      {/* Emoji */}
-                      <div className="text-4xl flex-shrink-0">{item.emoji}</div>
-
-                      {/* Info */}
+                      <div className="text-3xl flex-shrink-0 w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">{item.emoji}</div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-base font-bold text-white">{item.name}</h3>
-                        <div className="flex items-center gap-2 text-xs text-white/40">
-                          <span className="capitalize">{item.category}</span>
-                          <span>•</span>
-                          <span>₹{item.price}/{item.unit}</span>
+                        <h3 className="text-xs font-bold text-white truncate">{item.name}</h3>
+                        <p className="text-[10px] text-white/40">₹{item.price}/{item.unit}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-6 h-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white">-</button>
+                          <span className="text-white text-[11px] font-bold w-4 text-center">{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-6 h-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white">+</button>
                         </div>
+                        <p className="text-emerald-400 font-bold text-[11px]">₹{(item.price * item.quantity).toLocaleString()}</p>
                       </div>
-
-                      {/* Quantity Controls */}
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="qty-btn !w-8 !h-8 text-sm">−</button>
-                        <span className="text-white font-bold text-sm w-6 text-center">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="qty-btn !w-8 !h-8 text-sm">+</button>
-                      </div>
-
-                      {/* Price */}
-                      <div className="text-right w-20 flex-shrink-0">
-                        <p className="text-emerald-400 font-bold">₹{(item.price * item.quantity).toLocaleString()}</p>
-                      </div>
-
-                      {/* Remove */}
-                      <button onClick={() => removeItem(item.id)}
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-red-400/40 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100 cursor-pointer flex-shrink-0">
-                        ✕
-                      </button>
                     </motion.div>
                   ))}
                 </AnimatePresence>
               </div>
 
-              {/* Order Summary (1/3) */}
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                className="glass-card p-6 h-fit lg:sticky lg:top-24">
-                <h2 className="text-sm font-bold text-white/60 uppercase tracking-wider mb-5">Order Summary</h2>
+              {/* Order Summary */}
+                <div className="flex flex-col gap-6">
+                  {/* Bill Details */}
+                  <div className="glass-card p-5 relative overflow-hidden">
+                    {/* Delivery Badge (Zepto Style) */}
+                    <div className="absolute top-0 right-0 px-3 py-1 bg-emerald-500 rounded-bl-xl flex items-center gap-1.5 shadow-lg">
+                      <span className="text-[10px] font-black text-black">10 MINS</span>
+                      <span className="text-[8px] font-bold text-black opacity-60">DELIVERY</span>
+                    </div>
 
-                <div className="flex flex-col gap-3 mb-6">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-white/50">Subtotal ({totalItems} items)</span>
-                    <span className="text-white font-medium">₹{totalPrice.toLocaleString()}</span>
+                    <h2 className="text-[11px] font-bold text-white/40 uppercase tracking-widest mb-4">Summary</h2>
+                    <div className="flex flex-col gap-2.5 mb-4">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-white/60">Item Total</span>
+                        <span className="text-white/80 tabular-nums">₹{totalPrice.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-white/60">Delivery Fee</span>
+                        <span className={deliveryFee === 0 ? "text-emerald-400 font-bold" : "text-white/80 tabular-nums"}>
+                          {deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}
+                        </span>
+                      </div>
+                      <div className="h-px bg-white/5 my-1" />
+                      <div className="flex justify-between">
+                        <span className="text-sm font-bold text-white">To Pay</span>
+                        <span className="text-sm font-black text-emerald-400 tabular-nums">₹{grandTotal.toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={openCheckout}
+                      disabled={totalItems === 0}
+                      className="w-full bg-emerald-500 py-3.5 rounded-xl text-black text-xs font-black uppercase tracking-widest active:scale-95 transition-transform shadow-lg shadow-emerald-500/10"
+                    >
+                      Checkout Order
+                    </button>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-white/50">Delivery Fee</span>
-                    <span className={deliveryFee === 0 ? "text-emerald-400 font-medium" : "text-white font-medium"}>
-                      {deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}
-                    </span>
-                  </div>
-                  {deliveryFee > 0 && (
-                    <p className="text-[11px] text-emerald-400/60">Add ₹{500 - totalPrice} more for free delivery</p>
+
+                  {/* Nutrition Progress */}
+                  {totalItems > 0 && Object.values(nutritionSummary).some(v => v > 0) && (
+                    <div className="glass-card p-5 border-emerald-500/10">
+                      <p className="text-[11px] font-bold text-emerald-400/60 uppercase tracking-widest mb-4">Nutrition Analysis</p>
+                      <div className="flex justify-between items-center gap-2">
+                        <MuiProgressRing label="C" value={nutritionSummary.vitaminC} max={dailyRecommended.vitaminC} unit="mg" color="#10b981" />
+                        <MuiProgressRing label="Prot" value={nutritionSummary.protein} max={dailyRecommended.protein} unit="g" color="#14b8a6" />
+                        <MuiProgressRing label="Fib" value={nutritionSummary.fiber} max={dailyRecommended.fiber} unit="g" color="#8b5cf6" />
+                      </div>
+                    </div>
                   )}
-                  <div className="border-t border-white/[0.08] pt-3">
-                    <div className="flex justify-between">
-                      <span className="text-white font-bold">Total</span>
-                      <span className="text-emerald-400 font-black text-xl">₹{grandTotal.toLocaleString()}</span>
-                    </div>
-                  </div>
                 </div>
-
-                <button 
-                  onClick={openCheckout}
-                  disabled={totalItems === 0}
-                  className="btn-premium w-full text-center !py-4 text-base font-bold relative overflow-hidden mb-4"
-                >
-                  Place Order →
-                </button>
-
-                {/* Dynamic Nutrition Message with MUI Rings */}
-                {totalItems > 0 && Object.values(nutritionSummary).some(v => v > 0) && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border border-emerald-500/20"
-                  >
-                    <p className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                      <span className="text-lg">🌿</span> Cart Nutrition
-                    </p>
-                    
-                    <div className="grid grid-cols-3 gap-y-6 gap-x-2">
-                      <MuiProgressRing label="Vit C" value={nutritionSummary.vitaminC} max={dailyRecommended.vitaminC} unit="mg" color="#10b981" />
-                      <MuiProgressRing label="Protein" value={nutritionSummary.protein} max={dailyRecommended.protein} unit="g" color="#14b8a6" />
-                      <MuiProgressRing label="Fiber" value={nutritionSummary.fiber} max={dailyRecommended.fiber} unit="g" color="#8b5cf6" />
-                    </div>
-                  </motion.div>
-                )}
-
-                <div className="mt-4 flex items-center gap-2 justify-center text-[11px] text-white/30">
-                  <span>🔒</span>
-                  <span>Secure checkout • 100% fresh guarantee</span>
-                </div>
-              </motion.div>
             </div>
           )}
 
