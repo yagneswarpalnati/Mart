@@ -19,6 +19,8 @@ export interface Product {
   priority: "must-have" | "recommended" | "good-choice";
   category: "vegetable" | "fruit" | "salad" | "icecream";
   isTrending?: boolean;
+  oldPrice?: number;
+  image?: string;
 }
 
 export interface Salad {
@@ -31,6 +33,8 @@ export interface Salad {
   benefit: string;
   category: "salad";
   isTrending?: boolean;
+  oldPrice?: number;
+  image?: string;
 }
 
 export interface IceCream {
@@ -44,6 +48,8 @@ export interface IceCream {
   calories: number;
   category: "icecream";
   isTrending?: boolean;
+  oldPrice?: number;
+  image?: string;
 }
 
 // ─── Daily Recommended Values ─────────────────────
@@ -69,6 +75,8 @@ export const vegetables: Product[] = [
     priority: "must-have",
     category: "vegetable",
     isTrending: true,
+    oldPrice: 55,
+    image: "https://images.unsplash.com/photo-1576045057995-568f588f82fb?q=80&w=400&auto=format&fit=crop"
   },
   {
     id: 2,
@@ -79,6 +87,8 @@ export const vegetables: Product[] = [
     benefit: "Carrots are rich in beta-carotene (Vitamin A) which is essential for eye health, skin glow, and immune function. Eat them raw or cooked!",
     priority: "must-have",
     category: "vegetable",
+    oldPrice: 65,
+    image: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?q=80&w=400&auto=format&fit=crop"
   },
   {
     id: 3,
@@ -164,6 +174,8 @@ export const fruits: Product[] = [
     priority: "must-have",
     category: "fruit",
     isTrending: true,
+    oldPrice: 180,
+    image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?q=80&w=400&auto=format&fit=crop"
   },
   {
     id: 103,
@@ -239,6 +251,8 @@ export const salads: Salad[] = [
     benefit: "A Mediterranean classic packed with healthy fats, antioxidants, and hydrating vegetables. Perfect for heart health!",
     category: "salad",
     isTrending: true,
+    oldPrice: 220,
+    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=400&auto=format&fit=crop"
   },
   {
     id: 202,
@@ -305,6 +319,8 @@ export const icecreams: IceCream[] = [
     calories: 207,
     category: "icecream",
     isTrending: true,
+    oldPrice: 150,
+    image: "https://images.unsplash.com/photo-1501443762994-82bd5dabb8d2?q=80&w=400&auto=format&fit=crop"
   },
   {
     id: 302,

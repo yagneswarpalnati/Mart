@@ -3,22 +3,12 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageWrapper from "@/components/layout/PageWrapper";
-import { fruits, priorityConfig } from "@/data/nutrition";
+import CategoryNav from "@/components/layout/CategoryNav";
+import { fruits } from "@/data/nutrition";
 import { useCart } from "@/context/CartContext";
 
 export default function FruitsPage() {
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [quantities, setQuantities] = useState<Record<number, number>>({});
-  const { addItem, getItemQuantity } = useCart();
-
-  const updateQty = (id: number, delta: number) => {
-    setQuantities((prev) => ({ ...prev, [id]: Math.max(1, (prev[id] || 1) + delta) }));
-  };
-
-  const handleAddToCart = (fruit: any) => {
-    const qty = quantities[fruit.id] || 1;
-    addItem({ id: fruit.id, name: fruit.name, emoji: fruit.emoji, price: fruit.price, quantity: qty, category: "fruit", unit: "kg" });
-  };
+  const { addItem, updateQuantity, getItemQuantity } = useCart();
 
   return (
     <PageWrapper>
@@ -27,9 +17,11 @@ export default function FruitsPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-red-950/30 via-transparent to-orange-950/30" />
         <div className="absolute top-20 left-0 w-[500px] h-[500px] rounded-full bg-red-500/[0.05] blur-[120px]" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 py-12 sm:py-16">
+        <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 py-4">
+          <CategoryNav />
+          
           {/* Header */}
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12 mt-8">
             <div className="text-5xl mb-3 animate-float">🍎</div>
             <h1 className="text-4xl sm:text-5xl font-black mb-2 bg-gradient-to-r from-red-400 via-orange-300 to-yellow-400 bg-clip-text text-transparent">
               Fresh Fruits
@@ -39,103 +31,90 @@ export default function FruitsPage() {
             </p>
           </motion.div>
 
-          {/* Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {fruits?.map((fruit: any, i: number) => {
-              const isExpanded = expandedId === fruit.id;
-              const qty = quantities[fruit.id] || 1;
-              const priority = priorityConfig[fruit.priority as keyof typeof priorityConfig] || priorityConfig["good-choice"];
+          {/* List */}
+          <div className="flex flex-col gap-4">
+            {fruits?.map((fruit: any, i: number) => {
               const inCart = getItemQuantity(fruit.id);
 
               return (
                 <motion.div
                   key={fruit.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.08, duration: 0.5 }}
-                  className="glass-card p-6 flex flex-col"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="glass-card p-4 flex gap-4 items-center bg-white/5 border-white/5 active:bg-white/10 transition-colors"
                 >
-                  {inCart > 0 && (
-                    <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30 text-orange-400 text-[10px] font-bold">
-                      {inCart} in cart
+                  {/* Image Area (Zepto Style) */}
+                  <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-red-500/10 to-orange-500/10 flex items-center justify-center text-5xl relative flex-shrink-0 overflow-hidden shadow-inner">
+                    {fruit.image ? (
+                      <img src={fruit.image} alt={fruit.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="animate-float">{fruit.emoji}</span>
+                    )}
+                    {/* Time Badge Over Image */}
+                    <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-md px-1.5 py-0.5 rounded flex items-center gap-0.5 shadow-sm">
+                      <span className="text-[8px] font-black text-black tracking-tighter">10 MINS</span>
                     </div>
-                  )}
+                  </div>
 
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="text-5xl flex-shrink-0">{fruit.emoji}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="text-xl font-bold text-white">{fruit.name}</h3>
-                        <span className={`text-[11px] px-2 py-0.5 rounded-full border font-semibold ${priority.bg} ${priority.color}`}>
-                          {priority.label}
-                        </span>
-                        {fruit.isTrending && (
-                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 text-orange-400 font-bold flex items-center gap-1">
-                            🔥 Trending
-                          </span>
+                  {/* Info Area */}
+                  <div className="flex-1 min-w-0 h-full flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start">
+                        <h3 className="text-sm font-black text-white truncate uppercase tracking-tight">{fruit.name}</h3>
+                      </div>
+                      <p className="text-[10px] font-bold text-white/40 mb-2 uppercase tracking-widest">1 kg • Sweet & Fresh</p>
+                      
+                      {/* Nutrition Tags (Horizontal Scroll) */}
+                      <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+                        <span className="flex-shrink-0 px-2 py-0.5 rounded-lg bg-orange-500/10 text-orange-400 text-[9px] border border-orange-500/10">Vit A: {fruit.nutrition.vitaminA}mg</span>
+                        <span className="flex-shrink-0 px-2 py-0.5 rounded-lg bg-orange-500/10 text-orange-400 text-[9px] border border-orange-500/10">Vit C: {fruit.nutrition.vitaminC}mg</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-end justify-between mt-3">
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-orange-400 font-black text-lg">₹{fruit.price}</span>
+                          {fruit.oldPrice && (
+                            <span className="text-[10px] text-white/30 line-through font-medium">₹{fruit.oldPrice}</span>
+                          )}
+                        </div>
+                        <span className="text-[8px] text-orange-500/60 font-black uppercase tracking-widest">In Stock</span>
+                      </div>
+                      
+                      <div className="h-9 flex items-center">
+                        {inCart === 0 ? (
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => addItem({ ...fruit, quantity: 1, category: "fruit", unit: "kg" })}
+                            className="px-8 h-9 rounded-xl border border-orange-500/40 text-orange-400 text-[11px] font-black uppercase tracking-widest hover:bg-orange-500 hover:text-black shadow-lg shadow-orange-500/10 transition-all"
+                          >
+                            Add
+                          </motion.button>
+                        ) : (
+                          <motion.div 
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="flex items-center bg-orange-500 h-9 rounded-xl overflow-hidden shadow-lg shadow-orange-500/20"
+                          >
+                            <button 
+                              onClick={() => updateQuantity(fruit.id, inCart - 1)}
+                              className="w-9 h-full flex items-center justify-center text-black font-black text-lg hover:bg-black/10 transition-colors"
+                            >
+                              −
+                            </button>
+                            <span className="w-8 text-center text-black text-sm font-black italic">{inCart}</span>
+                            <button 
+                              onClick={() => updateQuantity(fruit.id, inCart + 1)}
+                              className="w-9 h-full flex items-center justify-center text-black font-black text-lg hover:bg-black/10 transition-colors"
+                            >
+                              +
+                            </button>
+                          </motion.div>
                         )}
                       </div>
-                      <p className="text-orange-400 font-semibold text-lg">₹{fruit.price}<span className="text-xs text-white/40 ml-1">/ kg</span></p>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-2 mb-4">
-                    {[
-                      { label: "Vit A", value: `${fruit.nutrition.vitaminA}mg`, type: "emerald" },
-                      { label: "Vit C", value: `${fruit.nutrition.vitaminC}mg`, type: "emerald" },
-                      { label: "Protein", value: `${fruit.nutrition.protein}g`, type: "amber" },
-                      { label: "Fiber", value: `${fruit.nutrition.fiber}g`, type: "blue" },
-                      { label: "Iron", value: `${fruit.nutrition.iron}mg`, type: "pink" },
-                      { label: "Calcium", value: `${fruit.nutrition.calcium}mg`, type: "amber" },
-                      { label: "Vit K", value: `${fruit.nutrition.vitaminK}mg`, type: "emerald" },
-                    ].map((n) => (
-                      <div key={n.label} className={`nutrition-badge${n.type !== "emerald" ? `-${n.type}` : ""} text-center flex-col !gap-0 !py-1.5`}>
-                        <span className="text-[10px] opacity-70">{n.label}</span>
-                        <span className="text-xs font-bold">{n.value}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : fruit.id)}
-                    className="text-left text-sm text-orange-400/80 hover:text-orange-300 transition-colors mb-3 flex items-center gap-1 cursor-pointer"
-                  >
-                    <span className="text-xs">{isExpanded ? "▼" : "▶"}</span>
-                    Why {fruit.name}?
-                  </button>
-
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="overflow-hidden mb-3"
-                      >
-                        <div className="p-3 rounded-xl bg-orange-500/[0.07] border border-orange-500/10 text-sm text-white/70 leading-relaxed">
-                          {fruit.benefit}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <div className="flex-1" />
-
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => updateQty(fruit.id, -1)} className="qty-btn">−</button>
-                      <span className="text-white font-bold text-base w-6 text-center">{qty}</span>
-                      <button onClick={() => updateQty(fruit.id, 1)} className="qty-btn">+</button>
-                      <span className="text-xs text-white/30">kg</span>
-                    </div>
-
-                    <button
-                      onClick={() => handleAddToCart(fruit)}
-                      className="btn-premium text-xs !px-5 !py-2.5"
-                      style={{ background: "linear-gradient(135deg, #f97316, #ef4444)" }}
-                    >
-                      Add to Cart
-                    </button>
                   </div>
                 </motion.div>
               );

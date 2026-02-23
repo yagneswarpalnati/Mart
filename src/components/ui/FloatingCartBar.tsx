@@ -1,63 +1,53 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/context/CartContext";
+import ShoppingBagRoundedIcon from '@mui/icons-material/ShoppingBagRounded';
+import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
 
 export default function FloatingCartBar() {
   const { totalItems, totalPrice } = useCart();
-  const pathname = usePathname();
 
-  // Hide on login, cart page itself, and home
-  const hidden = pathname === "/login" || pathname === "/" || pathname === "/cart";
-
-  if (hidden || totalItems === 0) return null;
+  if (totalItems === 0) return null;
 
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 100, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4"
+        initial={{ y: 20, opacity: 0, scale: 0.95 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        exit={{ y: 20, opacity: 0, scale: 0.95 }}
+        className="fixed bottom-[84px] left-0 right-0 z-50 px-4 pointer-events-none"
       >
-        <Link href="/cart">
-          <div className="max-w-2xl mx-auto rounded-2xl overflow-hidden cursor-pointer group"
-            style={{
-              background: "linear-gradient(135deg, #059669, #0d9488)",
-              boxShadow: "0 -4px 30px rgba(16,185,129,0.3), 0 8px 32px rgba(0,0,0,0.4)",
-            }}
-          >
-            <div className="flex items-center justify-between px-6 py-4">
-              {/* Left: Item count & total */}
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <span className="text-2xl">🛒</span>
-                  <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-white text-emerald-700 text-[11px] font-black flex items-center justify-center">
-                    {totalItems}
-                  </span>
+        <div className="max-w-md mx-auto pointer-events-auto">
+          <Link href="/cart">
+            <div className="relative group overflow-hidden rounded-[24px] bg-emerald-500 border border-emerald-400/50 shadow-[0_8px_32px_rgba(16,185,129,0.3)] active:scale-95 transition-all duration-300">
+              {/* Shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer" />
+              
+              <div className="flex items-center justify-between px-5 py-3.5">
+                <div className="flex items-center gap-4">
+                  <div className="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/10 shadow-inner">
+                    <ShoppingBagRoundedIcon sx={{ fontSize: 22 }} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-black font-black text-sm uppercase tracking-tight">
+                      {totalItems} Item{totalItems > 1 ? 's' : ''} Added
+                    </span>
+                    <span className="text-black/60 font-black text-xs tabular-nums">
+                      ₹{totalPrice.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-white font-bold text-sm">
-                    {totalItems} item{totalItems > 1 ? "s" : ""} added
-                  </p>
-                  <p className="text-emerald-100/70 text-xs">₹{totalPrice.toLocaleString()}</p>
-                </div>
-              </div>
 
-              {/* Right: View Cart CTA */}
-              <div className="flex items-center gap-2 text-white font-bold text-sm group-hover:gap-3 transition-all duration-300">
-                <span>View Cart</span>
-                <span className="text-lg transition-transform duration-300 group-hover:translate-x-1">→</span>
+                <div className="flex items-center gap-2 bg-black/10 px-4 py-2 rounded-xl group-hover:bg-black/20 transition-colors">
+                  <span className="text-black font-black text-[11px] uppercase tracking-widest">View Cart</span>
+                  <ArrowForwardIosRoundedIcon sx={{ fontSize: 10, color: 'black' }} />
+                </div>
               </div>
             </div>
-
-            {/* Animated shine effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-          </div>
-        </Link>
+          </Link>
+        </div>
       </motion.div>
     </AnimatePresence>
   );
