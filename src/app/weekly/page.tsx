@@ -38,9 +38,8 @@ const SHORT_DAY: Record<(typeof DAYS)[number], string> = {
 };
 
 const STORAGE_KEY = "mart_weekly_plan_v5";
-const TABLE_VISIBLE_ROWS = 5;
-const TABLE_ROW_HEIGHT_REM = 1.75;
-const TABLE_BODY_HEIGHT_REM = TABLE_VISIBLE_ROWS * TABLE_ROW_HEIGHT_REM;
+const PICKER_VISIBLE_ROWS = 5;
+const PICKER_ROW_HEIGHT_REM = 3.2;
 
 type WeeklyPlanItem = {
   id: string;
@@ -327,8 +326,14 @@ export default function WeeklyPage() {
 
   return (
     <PageWrapper>
-      <div className="app-page-fit px-3 py-2 overflow-hidden">
-        <section className="surface-card h-full p-2.5 grid grid-rows-[auto_auto_minmax(0,1fr)] gap-2 overflow-hidden">
+      <div
+        className="px-3 pt-3"
+        style={{
+          paddingBottom:
+            "calc(var(--app-bottomnav-height) + env(safe-area-inset-bottom) + 12px)",
+        }}
+      >
+        <section className="surface-card p-2.5 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <p className="text-[11px] font-semibold text-[#7f8c8d] uppercase tracking-[0.12em]">
               Weekly Diet Planner
@@ -340,6 +345,47 @@ export default function WeeklyPage() {
               Auto Plan
             </button>
           </div>
+          <NutritionRingsCard
+            compact
+            title="Aggregate Weekly Nutrition"
+            metrics={[
+              {
+                label: "Vitamin C",
+                value: dayTotals.vitaminC,
+                target: targets.vitaminC,
+                unit: "mg",
+                color: "#10E6C2",
+              },
+              {
+                label: "Protein",
+                value: dayTotals.protein,
+                target: targets.protein,
+                unit: "g",
+                color: "#2BC4FF",
+              },
+              {
+                label: "Fiber",
+                value: dayTotals.fiber,
+                target: targets.fiber,
+                unit: "g",
+                color: "#7B61FF",
+              },
+              {
+                label: "Calcium",
+                value: dayTotals.calcium,
+                target: targets.calcium,
+                unit: "mg",
+                color: "#FFB020",
+              },
+              {
+                label: "Iron",
+                value: dayTotals.iron,
+                target: targets.iron,
+                unit: "mg",
+                color: "#FF4E58",
+              },
+            ]}
+          />
 
           <div className="grid grid-cols-7 gap-1">
             {DAYS.map((day) => {
@@ -360,242 +406,199 @@ export default function WeeklyPage() {
             })}
           </div>
 
-          <div className="min-h-0 grid grid-rows-[auto_minmax(0,auto)_minmax(0,1fr)] gap-2 overflow-hidden">
-            <div className="rounded-xl border border-[#e7ecef] overflow-hidden">
-              <div className="px-2 py-1.5 bg-[#f8fafb] border-b border-[#e7ecef]">
-                <p className="text-[10px] font-semibold text-[#7f8c8d]">
-                  Weekly Diet Table ({SHORT_DAY[selectedDay]})
-                </p>
+          <div className="rounded-xl border border-[#e7ecef] overflow-hidden">
+            <div className="px-2 py-1.5 bg-[#f8fafb] border-b border-[#e7ecef]">
+              <p className="text-[10px] font-semibold text-[#7f8c8d]">
+                Weekly Diet Table ({SHORT_DAY[selectedDay]})
+              </p>
+            </div>
+
+            <div className="px-1.5 py-1">
+              <div className="grid grid-cols-[28%_10%_12%_12%_12%_26%] text-[9px] sm:text-[10px] text-[#7f8c8d] font-semibold px-0.5">
+                <span>Item</span>
+                <span className="text-right">Qty</span>
+                <span className="text-right">Cal</span>
+                <span className="text-right">Prot</span>
+                <span className="text-right">Fib</span>
+                <span className="text-right">Primary</span>
               </div>
 
-              <div className="px-1.5 py-1">
-                <div className="grid grid-cols-[28%_10%_12%_12%_12%_26%] text-[9px] sm:text-[10px] text-[#7f8c8d] font-semibold px-0.5">
-                  <span>Item</span>
-                  <span className="text-right">Qty</span>
-                  <span className="text-right">Cal</span>
-                  <span className="text-right">Prot</span>
-                  <span className="text-right">Fib</span>
-                  <span className="text-right">Primary</span>
-                </div>
+              <div
+                className="mt-1 overflow-y-auto"
+                style={{
+                  maxHeight: "clamp(10rem, 28vh, 16rem)",
+                  minHeight: "10rem",
+                }}
+              >
+                {selectedDayItems.map((row) => {
+                  const item = row.product;
+                  const qty = row.quantity;
 
-                <div
-                  className="mt-1 overflow-y-auto"
-                  style={{
-                    height: `${TABLE_BODY_HEIGHT_REM}rem`,
-                    minHeight: `${TABLE_BODY_HEIGHT_REM}rem`,
-                  }}
-                >
-                  {selectedDayItems.map((row) => {
-                    const item = row.product;
-                    const qty = row.quantity;
-
-                    return (
-                      <div
-                        key={item.id}
-                        className="grid grid-cols-[28%_10%_12%_12%_12%_26%] items-center border-t border-[#f0f3f5] text-[9px] sm:text-[10px]"
-                        style={{ minHeight: `${TABLE_ROW_HEIGHT_REM}rem` }}
-                      >
-                        <span className="truncate text-[#1e1e1e] font-medium pr-1">
-                          {item.name}
-                        </span>
-                        <span className="text-right text-[#1e1e1e]">{qty}</span>
-                        <span className="text-right text-[#1e1e1e]">
-                          {(item.nutrition.calories * qty).toFixed(0)}
-                        </span>
-                        <span className="text-right text-[#1e1e1e]">
-                          {(item.nutrition.protein * qty).toFixed(1)}
-                        </span>
-                        <span className="text-right text-[#1e1e1e]">
-                          {(item.nutrition.fiber * qty).toFixed(1)}
-                        </span>
-                        <span className="text-right text-[#7f8c8d] truncate">
-                          {getPrimaryNutrient(item)}
-                        </span>
-                      </div>
-                    );
-                  })}
-
-                  {selectedDayItems.length === 0 && (
-                    <div className="h-full border-t border-[#f0f3f5] flex items-center justify-center text-[#7f8c8d] text-[10px]">
-                      No items selected
+                  return (
+                    <div
+                      key={item.id}
+                      className="grid grid-cols-[28%_10%_12%_12%_12%_26%] items-center border-t border-[#f0f3f5] text-[9px] sm:text-[10px]"
+                      style={{ minHeight: "1.75rem" }}
+                    >
+                      <span className="truncate text-[#1e1e1e] font-medium pr-1">
+                        {item.name}
+                      </span>
+                      <span className="text-right text-[#1e1e1e]">{qty}</span>
+                      <span className="text-right text-[#1e1e1e]">
+                        {(item.nutrition.calories * qty).toFixed(0)}
+                      </span>
+                      <span className="text-right text-[#1e1e1e]">
+                        {(item.nutrition.protein * qty).toFixed(1)}
+                      </span>
+                      <span className="text-right text-[#1e1e1e]">
+                        {(item.nutrition.fiber * qty).toFixed(1)}
+                      </span>
+                      <span className="text-right text-[#7f8c8d] truncate">
+                        {getPrimaryNutrient(item)}
+                      </span>
                     </div>
-                  )}
-                </div>
-              </div>
+                  );
+                })}
 
-              <div className="px-2 py-1 border-t border-[#d7efe2] bg-[#eef9f2]">
-                <div className="grid grid-cols-5 text-[9px] sm:text-[10px]">
-                  <span className="font-bold text-[#1e1e1e]">TOTAL</span>
-                  <span className="text-right font-bold text-[#1e1e1e]">
-                    {dayTotals.totalQty}
-                  </span>
-                  <span className="text-right font-bold text-[#1e1e1e]">
-                    {dayTotals.calories.toFixed(0)}
-                  </span>
-                  <span className="text-right font-bold text-[#1e1e1e]">
-                    {dayTotals.protein.toFixed(1)}
-                  </span>
-                  <span className="text-right font-bold text-[#1e1e1e]">
-                    {dayTotals.fiber.toFixed(1)}
-                  </span>
-                </div>
+                {selectedDayItems.length === 0 && (
+                  <div className="border-t border-[#f0f3f5] flex items-center justify-center text-[#7f8c8d] text-[10px] h-[10rem]">
+                    No items selected
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="min-h-0 grid  gap-2 overflow-hidden">
-              <div className="min-h-0">
-                <NutritionRingsCard
-                  compact
-                  title="Aggregate Weekly Nutrition"
-                  metrics={[
-                    {
-                      label: "Vitamin C",
-                      value: dayTotals.vitaminC,
-                      target: targets.vitaminC,
-                      unit: "mg",
-                      color: "#10E6C2",
-                    },
-                    {
-                      label: "Protein",
-                      value: dayTotals.protein,
-                      target: targets.protein,
-                      unit: "g",
-                      color: "#2BC4FF",
-                    },
-                    {
-                      label: "Fiber",
-                      value: dayTotals.fiber,
-                      target: targets.fiber,
-                      unit: "g",
-                      color: "#7B61FF",
-                    },
-                    {
-                      label: "Calcium",
-                      value: dayTotals.calcium,
-                      target: targets.calcium,
-                      unit: "mg",
-                      color: "#FFB020",
-                    },
-                    {
-                      label: "Iron",
-                      value: dayTotals.iron,
-                      target: targets.iron,
-                      unit: "mg",
-                      color: "#FF4E58",
-                    },
-                  ]}
-                />
-              </div>
-
-              <div className="min-h-0 rounded-xl border border-[#e7ecef] bg-white p-2 grid grid-rows-[auto_auto_1fr_auto] gap-1.5 overflow-hidden">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[11px] font-semibold text-[#1e1e1e]">
-                    All Items
-                  </p>
-                  <div className="inline-flex gap-1">
-                    <button
-                      onClick={selectAllFiltered}
-                      className="h-6 px-2 rounded-md text-[10px] font-semibold bg-[#eef9f2] text-[#27ae60] border border-[#c7efda]"
-                    >
-                      Select All
-                    </button>
-                    <button
-                      onClick={clearDay}
-                      className="h-6 px-2 rounded-md text-[10px] font-semibold bg-[#fff5f5] text-[#e74c3c] border border-[#ffd7d2]"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-[1fr_auto] gap-1.5">
-                  <input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search item"
-                    className="input-field h-7 !py-1 !px-2 text-[10px]"
-                  />
-                  <select
-                    value={category}
-                    onChange={(event) =>
-                      setCategory(event.target.value as ProductCategory | "All")
-                    }
-                    className="input-field h-7 !py-1 !px-2 text-[10px] w-[102px]"
-                  >
-                    <option value="All">All</option>
-                    <option value="Vegetables">Veg</option>
-                    <option value="Fruits">Fruits</option>
-                    <option value="Salads">Salads</option>
-                    <option value="Ice Creams">Ice</option>
-                  </select>
-                </div>
-
-                <div className="min-h-0 overflow-y-auto pr-1">
-                  <div className="grid grid-cols-1 gap-1">
-                    {filteredItems.map((product) => {
-                      const qty = quantityById[product.id] ?? 0;
-
-                      return (
-                        <div
-                          key={product.id}
-                          className="rounded-lg border border-[#edf1f3] px-2 py-1.5 flex items-center justify-between gap-2"
-                        >
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-semibold text-[#1e1e1e] truncate">
-                              {product.name}
-                            </p>
-                            <p className="text-[9px] text-[#7f8c8d]">
-                              {product.category}
-                            </p>
-                          </div>
-
-                          {qty > 0 ? (
-                            <div className="inline-flex items-center gap-1 rounded-md bg-[#eef9f2] border border-[#c7efda] p-0.5">
-                              <button
-                                onClick={() => removeItemFromDay(product.id)}
-                                className="h-5 w-5 rounded bg-white text-[#27ae60] text-[11px] font-bold"
-                              >
-                                -
-                              </button>
-                              <span className="min-w-4 text-center text-[10px] font-semibold text-[#1e1e1e]">
-                                {qty}
-                              </span>
-                              <button
-                                onClick={() => addItemToDay(product.id)}
-                                className="h-5 w-5 rounded bg-white text-[#27ae60] text-[11px] font-bold"
-                              >
-                                +
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => addItemToDay(product.id)}
-                              className="h-6 px-2 rounded-md text-[10px] font-semibold bg-[#eef9f2] text-[#27ae60] border border-[#c7efda]"
-                            >
-                              Add
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-
-                    {filteredItems.length === 0 && (
-                      <p className="text-[10px] text-[#7f8c8d] text-center py-2">
-                        No items found for current filter
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleCheckout}
-                  className="btn-primary h-8 text-xs"
-                >
-                  Checkout Weekly Plan
-                </button>
+            <div className="px-2 py-1 border-t border-[#d7efe2] bg-[#eef9f2]">
+              <div className="grid grid-cols-5 text-[9px] sm:text-[10px]">
+                <span className="font-bold text-[#1e1e1e]">TOTAL</span>
+                <span className="text-right font-bold text-[#1e1e1e]">
+                  {dayTotals.totalQty}
+                </span>
+                <span className="text-right font-bold text-[#1e1e1e]">
+                  {dayTotals.calories.toFixed(0)}
+                </span>
+                <span className="text-right font-bold text-[#1e1e1e]">
+                  {dayTotals.protein.toFixed(1)}
+                </span>
+                <span className="text-right font-bold text-[#1e1e1e]">
+                  {dayTotals.fiber.toFixed(1)}
+                </span>
               </div>
             </div>
           </div>
+
+          <div className="rounded-xl border border-[#e7ecef] bg-white p-2 space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-semibold text-[#1e1e1e]">
+                All Items
+              </p>
+              <div className="inline-flex gap-1">
+                {/* <button
+                  onClick={selectAllFiltered}
+                  className="h-6 px-2 rounded-md text-[10px] font-semibold bg-[#eef9f2] text-[#27ae60] border border-[#c7efda]"
+                >
+                  Select All
+                </button> */}
+                <button
+                  onClick={clearDay}
+                  className="h-6 px-2 rounded-md text-[10px] font-semibold bg-[#fff5f5] text-[#e74c3c] border border-[#ffd7d2]"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-[1fr_auto] gap-1.5">
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search item"
+                className="input-field h-7 !py-1 !px-2 text-[10px]"
+              />
+              <select
+                value={category}
+                onChange={(event) =>
+                  setCategory(event.target.value as ProductCategory | "All")
+                }
+                className="input-field h-7 !py-1 !px-2 text-[10px] w-[102px]"
+              >
+                <option value="All">All</option>
+                <option value="Vegetables">Veg</option>
+                <option value="Fruits">Fruits</option>
+                <option value="Salads">Salads</option>
+                <option value="Ice Creams">Ice</option>
+              </select>
+            </div>
+
+            <div
+              className="mt-1 overflow-y-auto"
+              style={{
+                height: `${PICKER_VISIBLE_ROWS * PICKER_ROW_HEIGHT_REM}rem`,
+                minHeight: `${PICKER_VISIBLE_ROWS * PICKER_ROW_HEIGHT_REM}rem`,
+              }}
+            >
+              <div className="grid grid-cols-1 gap-1">
+                {filteredItems.map((product) => {
+                  const qty = quantityById[product.id] ?? 0;
+
+                  return (
+                    <div
+                      key={product.id}
+                      className="rounded-lg border border-[#edf1f3] px-2 py-1.5 flex items-center justify-between gap-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-semibold text-[#1e1e1e] truncate">
+                          {product.name}
+                        </p>
+                        <p className="text-[9px] text-[#7f8c8d]">
+                          {product.category}
+                        </p>
+                      </div>
+
+                      {qty > 0 ? (
+                        <div className="inline-flex items-center gap-1 rounded-md bg-[#eef9f2] border border-[#c7efda] p-0.5">
+                          <button
+                            onClick={() => removeItemFromDay(product.id)}
+                            className="h-5 w-5 rounded bg-white text-[#27ae60] text-[11px] font-bold"
+                          >
+                            -
+                          </button>
+                          <span className="min-w-4 text-center text-[10px] font-semibold text-[#1e1e1e]">
+                            {qty}
+                          </span>
+                          <button
+                            onClick={() => addItemToDay(product.id)}
+                            className="h-5 w-5 rounded bg-white text-[#27ae60] text-[11px] font-bold"
+                          >
+                            +
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => addItemToDay(product.id)}
+                          className="h-6 px-2 rounded-md text-[10px] font-semibold bg-[#eef9f2] text-[#27ae60] border border-[#c7efda]"
+                        >
+                          Add
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {filteredItems.length === 0 && (
+                  <p className="text-[10px] text-[#7f8c8d] text-center py-2">
+                    No items found for current filter
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={handleCheckout}
+            className="btn-primary text-xs h-8 p-2 w-full"
+          >
+            Checkout Weekly Plan
+          </button>
         </section>
       </div>
     </PageWrapper>

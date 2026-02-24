@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { getUserProfile } from "@/data/mockApi";
+import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
+import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
 
 function getGreetingBase(date: Date) {
   const hour = date.getHours();
@@ -60,15 +62,17 @@ export default function Navbar() {
         <div className="flex items-center gap-2 flex-shrink-0">
           <Link
             href="/cart"
-            className="soft-pill h-9 px-3 inline-flex items-center text-xs font-semibold text-[#1e1e1e]"
+            className="soft-pill h-9 px-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[#1e1e1e]"
           >
-            Cart {totalItems > 0 ? `(${totalItems})` : ""}
+            <ShoppingCartOutlinedIcon sx={{ fontSize: 18 }} />
+            <span>Cart {totalItems > 0 ? `(${totalItems})` : ""}</span>
           </Link>
+
           <Link
             href="/profile"
-            className="soft-pill h-9 w-9 inline-flex items-center justify-center text-xs font-bold text-[#2ecc71]"
+            className="soft-pill h-9 w-9 inline-flex items-center justify-center text-[#2ecc71]"
           >
-            RP
+            <AccountCircleOutlinedIcon sx={{ fontSize: 22 }} />
           </Link>
         </div>
       </div>

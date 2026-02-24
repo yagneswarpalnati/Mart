@@ -64,6 +64,24 @@ export interface DashboardResponse {
     estimatedSavings: number;
     avgProtein: number;
   };
+  weeklyReport: {
+    periodLabel: string;
+    resetApplied: boolean;
+    values: {
+      vitaminC: number;
+      protein: number;
+      fiber: number;
+      calcium: number;
+      iron: number;
+    };
+    targets: {
+      vitaminC: number;
+      protein: number;
+      fiber: number;
+      calcium: number;
+      iron: number;
+    };
+  };
 }
 
 export interface CatalogFilters {

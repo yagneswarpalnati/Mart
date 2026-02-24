@@ -5,7 +5,7 @@ import Link from "next/link";
 import CategoryNav from "@/components/layout/CategoryNav";
 import PageWrapper from "@/components/layout/PageWrapper";
 import { useCart } from "@/context/CartContext";
-import { categoryList, getCatalogProducts, getTopNutrients } from "@/data/mockApi";
+import { getCatalogProducts, getTopNutrients } from "@/data/mockApi";
 import type { CatalogFilters, ProductCategory, ProductResponse } from "@/types/contracts";
 
 const nutritionOptions: Array<{ label: string; value: CatalogFilters["nutrition"] }> = [
@@ -48,7 +48,7 @@ export default function CatalogScreen({ initialCategory }: { initialCategory: Pr
 
   return (
     <PageWrapper>
-      <div className="px-4 pb-28">
+      <div className="px-4 pb-44">
         <CategoryNav />
 
         <section className="pt-4 flex flex-col gap-3">
@@ -59,24 +59,7 @@ export default function CatalogScreen({ initialCategory }: { initialCategory: Pr
             className="input-field"
           />
 
-          <div className="grid grid-cols-2 gap-2">
-            <select
-              className="input-field text-sm"
-              value={filters.category ?? initialCategory}
-              onChange={(event) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  category: event.target.value as ProductCategory | "All",
-                }))
-              }
-            >
-              {categoryList.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-
+          <div className="grid grid-cols-1 gap-2">
             <select
               className="input-field text-sm"
               value={filters.nutrition ?? "all"}

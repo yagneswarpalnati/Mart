@@ -16,6 +16,9 @@ const database: MockDatabase = db as MockDatabase;
 
 let cachedUser: UserProfileResponse = { ...database.users[0] };
 export const USER_PROFILE_UPDATED_EVENT = "mart:user-profile-updated";
+const USER_CACHE_KEY = "mart:user-profile-cache";
+const ORDERS_CACHE_KEY = "mart:user-orders-cache";
+const ORDERS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 const API_DELAY_MS = 180;
 
@@ -40,6 +43,60 @@ function normalizeCategory(category: string): ProductCategory {
   return map[category.toLowerCase()] ?? "Vegetables";
 }
 
+function isBrowser() {
+  return typeof window !== "undefined";
+}
+
+function hydrateCachedUserFromStorage() {
+  if (!isBrowser()) return;
+
+  try {
+    const raw = localStorage.getItem(USER_CACHE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as UserProfileResponse;
+    if (parsed?.id) {
+      cachedUser = { ...cachedUser, ...parsed };
+    }
+  } catch {
+    localStorage.removeItem(USER_CACHE_KEY);
+  }
+}
+
+function persistCachedUserToStorage(user: UserProfileResponse) {
+  if (!isBrowser()) return;
+  localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+}
+
+function getOrderDate(dateText: string) {
+  const dt = new Date(dateText);
+  dt.setHours(0, 0, 0, 0);
+  return dt;
+}
+
+function getMondayAndSundayNoon(now: Date) {
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const day = today.getDay();
+  const diffToMonday = day === 0 ? 6 : day - 1;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+
+  const sundayNoon = new Date(monday);
+  sundayNoon.setDate(monday.getDate() + 6);
+  sundayNoon.setHours(12, 0, 0, 0);
+
+  return { monday, sundayNoon };
+}
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export const categoryList: Array<ProductCategory | "All"> = [
   "All",
   "Vegetables",
@@ -57,13 +114,17 @@ export async function simulateQrLogin() {
 }
 
 export async function getUserProfile() {
+  hydrateCachedUserFromStorage();
   await wait();
+  persistCachedUserToStorage(cachedUser);
   return { ...cachedUser };
 }
 
 export async function updateUserProfile(payload: Partial<UserProfileResponse>) {
+  hydrateCachedUserFromStorage();
   await wait();
   cachedUser = { ...cachedUser, ...payload };
+  persistCachedUserToStorage(cachedUser);
 
   if (typeof window !== "undefined") {
     window.dispatchEvent(
@@ -85,6 +146,7 @@ export async function getProductById(productId: string) {
 }
 
 export async function getDashboardData(): Promise<DashboardResponse> {
+  hydrateCachedUserFromStorage();
   await wait();
   const sorted = [...database.products].sort(byPopularityWithJitter);
   const trending = sorted.slice(0, 6);
@@ -99,6 +161,47 @@ export async function getDashboardData(): Promise<DashboardResponse> {
     return sum + (product?.nutrition.protein ?? 0) * item.quantity;
   }, 0);
 
+  const now = new Date();
+  const { monday, sundayNoon } = getMondayAndSundayNoon(now);
+  const resetApplied = now >= sundayNoon;
+  const endForWindow = resetApplied ? monday : now;
+  const weeklyOrders = resetApplied
+    ? []
+    : userOrders.filter((order) => {
+        const orderDate = getOrderDate(order.orderedAt);
+        return orderDate >= monday && orderDate <= endForWindow;
+      });
+
+  const weeklyValues = weeklyOrders.reduce(
+    (acc, order) => {
+      order.items.forEach((orderItem) => {
+        const product = database.products.find((entry) => entry.id === orderItem.productId);
+        if (!product) return;
+
+        const qty = orderItem.quantity;
+        acc.vitaminC += (product.nutrition.vitaminC ?? 0) * qty;
+        acc.protein += product.nutrition.protein * qty;
+        acc.fiber += product.nutrition.fiber * qty;
+        acc.calcium += (product.nutrition.calcium ?? (product.nutrition.potassium ?? 0) * 0.35) * qty;
+        acc.iron += product.nutrition.iron * qty;
+      });
+      return acc;
+    },
+    { vitaminC: 0, protein: 0, fiber: 0, calcium: 0, iron: 0 },
+  );
+
+  const dailyTarget = getNutritionTargets(cachedUser);
+  const elapsedDays = resetApplied
+    ? 7
+    : Math.max(1, Math.floor((now.getTime() - monday.getTime()) / (24 * 60 * 60 * 1000)) + 1);
+  const weeklyTargets = {
+    vitaminC: 90 * elapsedDays,
+    protein: dailyTarget.protein * elapsedDays,
+    fiber: dailyTarget.fiber * elapsedDays,
+    calcium: 1000 * elapsedDays,
+    iron: dailyTarget.iron * elapsedDays,
+  };
+
   return {
     trending,
     recommended,
@@ -106,6 +209,14 @@ export async function getDashboardData(): Promise<DashboardResponse> {
       itemsOrdered: allOrderedItems.reduce((sum, item) => sum + item.quantity, 0),
       estimatedSavings: 260,
       avgProtein: Number((proteinSum / Math.max(allOrderedItems.length, 1)).toFixed(1)),
+    },
+    weeklyReport: {
+      periodLabel: resetApplied
+        ? `${formatDate(monday)} - reset after Sun 12 PM`
+        : `${formatDate(monday)} - ${formatDate(now)}`,
+      resetApplied,
+      values: weeklyValues,
+      targets: weeklyTargets,
     },
   };
 }
@@ -145,11 +256,39 @@ export async function getCatalogProducts(filters: CatalogFilters = {}) {
 }
 
 export async function getOrdersForUser(limit = 10): Promise<OrderResponse[]> {
+  hydrateCachedUserFromStorage();
+  if (isBrowser()) {
+    try {
+      const raw = localStorage.getItem(ORDERS_CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { userId: string; ts: number; orders: OrderResponse[] };
+        if (
+          parsed.userId === cachedUser.id &&
+          Date.now() - parsed.ts <= ORDERS_CACHE_TTL_MS &&
+          Array.isArray(parsed.orders)
+        ) {
+          return parsed.orders.slice(0, limit);
+        }
+      }
+    } catch {
+      localStorage.removeItem(ORDERS_CACHE_KEY);
+    }
+  }
+
   await wait();
-  return database.orders
+  const orders = database.orders
     .filter((order) => order.userId === cachedUser.id)
     .sort((a, b) => new Date(b.orderedAt).getTime() - new Date(a.orderedAt).getTime())
     .slice(0, limit);
+
+  if (isBrowser()) {
+    localStorage.setItem(
+      ORDERS_CACHE_KEY,
+      JSON.stringify({ userId: cachedUser.id, ts: Date.now(), orders }),
+    );
+  }
+
+  return orders;
 }
 
 export function getNutritionTargets(user: UserProfileResponse): NutritionTarget {
