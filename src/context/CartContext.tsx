@@ -1,6 +1,13 @@
 "use client";
 
-import { ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import type { NutritionResponse } from "@/types/contracts";
 
 export interface CartItem {
@@ -69,13 +76,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [items, ready]);
 
-  const addToast = useCallback((message: string, type: Toast["type"] = "success") => {
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    setToasts((prev) => [...prev, { id, message, type }]);
-    window.setTimeout(() => {
-      setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, 2800);
-  }, []);
+  const addToast = useCallback(
+    (message: string, type: Toast["type"] = "success") => {
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      setToasts((prev) => [...prev, { id, message, type }]);
+      window.setTimeout(() => {
+        setToasts((prev) => prev.filter((toast) => toast.id !== id));
+      }, 2800);
+    },
+    [],
+  );
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
@@ -88,7 +98,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const existing = prev.find((entry) => entry.id === item.id);
         if (existing) {
           return prev.map((entry) =>
-            entry.id === item.id ? { ...entry, quantity: entry.quantity + quantity } : entry,
+            entry.id === item.id
+              ? { ...entry, quantity: entry.quantity + quantity }
+              : entry,
           );
         }
 
@@ -118,8 +130,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([]);
   }, []);
 
-  const totalItems = items.reduce((sum, entry) => sum + entry.quantity, 0);
-  const totalPrice = items.reduce((sum, entry) => sum + entry.price * entry.quantity, 0);
+  const totalItems = items.reduce((sum, entry) => sum + 1, 0);
+  const totalPrice = items.reduce(
+    (sum, entry) => sum + entry.price * entry.quantity,
+    0,
+  );
 
   const getItemQuantity = useCallback(
     (id: string) => items.find((entry) => entry.id === id)?.quantity ?? 0,
@@ -139,7 +154,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         getItemQuantity,
       }}
     >
-      <ToastContext.Provider value={{ toasts, addToast, removeToast }}>{children}</ToastContext.Provider>
+      <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+        {children}
+      </ToastContext.Provider>
     </CartContext.Provider>
   );
 }
