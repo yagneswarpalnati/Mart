@@ -1,332 +1,602 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
 import PageWrapper from "@/components/layout/PageWrapper";
-import { vegetables, fruits, salads, icecreams, dailyRecommended } from "@/data/nutrition";
-import { CircularProgress, Box, Typography } from "@mui/material";
+import NutritionRingsCard from "@/components/ui/NutritionRingsCard";
+import { useToast } from "@/context/CartContext";
+import {
+  generateSampleWeeklyPlan,
+  getAllProducts,
+  getNutritionTargets,
+  getUserProfile,
+} from "@/data/mockApi";
+import type {
+  ProductCategory,
+  ProductResponse,
+  UserProfileResponse,
+  WeeklyPlanResponse,
+} from "@/types/contracts";
 
-function MuiProgressRing({ label, value, max, unit, color }: { label: string; value: number; max: number; unit: string; color: string }) {
-  const percentage = Math.min((value / max) * 100, 100);
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-      <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-        <CircularProgress variant="determinate" value={100} size={60} thickness={5} sx={{ color: 'rgba(255,255,255,0.06)' }} />
-        <CircularProgress variant="determinate" value={percentage} size={60} thickness={5} 
-          sx={{ color, position: 'absolute', left: 0, '& .MuiCircularProgress-circle': { strokeLinecap: 'round' } }} 
-        />
-        <Box sx={{ top: 0, left: 0, bottom: 0, right: 0, position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Typography variant="caption" component="div" sx={{ color: 'white', fontWeight: 'bold', fontSize: '0.75rem' }}>
-            {Math.round(percentage)}%
-          </Typography>
-        </Box>
-      </Box>
-      <Box sx={{ textAlign: 'center' }}>
-        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, display: 'block', mb: 0.5 }}>{label}</Typography>
-        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem' }}>{Math.round(value)}{unit}/{max}</Typography>
-      </Box>
-    </Box>
-  );
+const DAYS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
+
+const SHORT_DAY: Record<(typeof DAYS)[number], string> = {
+  Monday: "Mon",
+  Tuesday: "Tue",
+  Wednesday: "Wed",
+  Thursday: "Thu",
+  Friday: "Fri",
+  Saturday: "Sat",
+  Sunday: "Sun",
+};
+
+const STORAGE_KEY = "mart_weekly_plan_v5";
+const TABLE_VISIBLE_ROWS = 5;
+const TABLE_ROW_HEIGHT_REM = 1.75;
+const TABLE_BODY_HEIGHT_REM = TABLE_VISIBLE_ROWS * TABLE_ROW_HEIGHT_REM;
+
+type WeeklyPlanItem = {
+  id: string;
+  quantity: number;
+};
+
+type WeeklyPlanState = {
+  [day: string]: WeeklyPlanItem[];
+};
+
+function getEmptyPlan(): WeeklyPlanState {
+  return DAYS.reduce<WeeklyPlanState>((acc, day) => {
+    acc[day] = [];
+    return acc;
+  }, {});
 }
 
-type AnyItem = { id: number; name: string; emoji: string; category: string; nutrition?: any };
+function normalizePlanData(raw: unknown): WeeklyPlanState {
+  const empty = getEmptyPlan();
+  if (!raw || typeof raw !== "object") {
+    return empty;
+  }
 
-const allItems: AnyItem[] = [
-  ...vegetables.map((v) => ({ id: v.id, name: v.name, emoji: v.emoji, category: "vegetable", nutrition: v.nutrition })),
-  ...fruits.map((f) => ({ id: f.id, name: f.name, emoji: f.emoji, category: "fruit", nutrition: f.nutrition })),
-  ...salads.map((s) => ({ id: s.id, name: s.name, emoji: s.emoji, category: "salad", nutrition: s.nutrition })),
-  ...icecreams.map((ic) => ({ id: ic.id, name: ic.name, emoji: ic.emoji, category: "icecream" })),
-];
+  const input = raw as Record<string, unknown>;
 
-const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const dayEmojis = ["🌱", "🌿", "☘️", "🍀", "🌾", "🌻", "🌈"];
+  return DAYS.reduce<WeeklyPlanState>((acc, day) => {
+    const dayValue = input[day];
 
-type WeeklyPlan = Record<string, AnyItem[]>;
+    if (!Array.isArray(dayValue)) {
+      acc[day] = [];
+      return acc;
+    }
+
+    const quantityById: Record<string, number> = {};
+
+    dayValue.forEach((entry) => {
+      if (typeof entry === "string") {
+        quantityById[entry] = (quantityById[entry] ?? 0) + 1;
+        return;
+      }
+
+      if (entry && typeof entry === "object") {
+        const maybeEntry = entry as { id?: unknown; quantity?: unknown };
+        if (typeof maybeEntry.id === "string") {
+          const qty =
+            typeof maybeEntry.quantity === "number" && maybeEntry.quantity > 0
+              ? Math.floor(maybeEntry.quantity)
+              : 1;
+          quantityById[maybeEntry.id] =
+            (quantityById[maybeEntry.id] ?? 0) + qty;
+        }
+      }
+    });
+
+    acc[day] = Object.entries(quantityById).map(([id, quantity]) => ({
+      id,
+      quantity,
+    }));
+    return acc;
+  }, empty);
+}
+
+function legacyToPlanState(legacy: WeeklyPlanResponse): WeeklyPlanState {
+  return DAYS.reduce<WeeklyPlanState>((acc, day) => {
+    acc[day] = (legacy[day] ?? []).map((id) => ({ id, quantity: 1 }));
+    return acc;
+  }, getEmptyPlan());
+}
+
+function toCalcium(product: ProductResponse) {
+  if (typeof product.nutrition.calcium === "number") {
+    return product.nutrition.calcium;
+  }
+  return (product.nutrition.potassium ?? 0) * 0.35;
+}
+
+function getPrimaryNutrient(product: ProductResponse) {
+  const vitaminC = product.nutrition.vitaminC ?? 0;
+  const iron = product.nutrition.iron;
+  const calcium = toCalcium(product);
+
+  if (vitaminC >= iron && vitaminC >= calcium / 20)
+    return `Vit C ${vitaminC.toFixed(0)}mg`;
+  if (calcium / 20 >= iron) return `Calcium ${calcium.toFixed(0)}mg`;
+  return `Iron ${iron.toFixed(1)}mg`;
+}
 
 export default function WeeklyPage() {
-  const [plan, setPlan] = useState<WeeklyPlan>(() =>
-    Object.fromEntries(days.map((d) => [d, []]))
-  );
-  const [activeDay, setActiveDay] = useState("Monday");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [filterCat, setFilterCat] = useState<string>("all");
-  const [isRoutine, setIsRoutine] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const { addToast } = useToast();
 
-  // Load from localStorage
-  useEffect(() => {
-    try {
-      const savedPlan = localStorage.getItem("ynot_weekly_plan");
-      if (savedPlan) setPlan(JSON.parse(savedPlan));
+  const [profile, setProfile] = useState<UserProfileResponse | null>(null);
+  const [products, setProducts] = useState<ProductResponse[]>([]);
+  const [selectedDay, setSelectedDay] =
+    useState<(typeof DAYS)[number]>("Monday");
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState<ProductCategory | "All">("All");
 
-      const savedRoutine = localStorage.getItem("ynot_is_routine");
-      if (savedRoutine) setIsRoutine(JSON.parse(savedRoutine));
-    } catch (e) {
-      console.error("Failed to load weekly plan", e);
+  const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlanState>(() => {
+    if (typeof window === "undefined") {
+      return getEmptyPlan();
     }
-    setIsInitialized(true);
+
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return getEmptyPlan();
+      return normalizePlanData(JSON.parse(raw));
+    } catch {
+      return getEmptyPlan();
+    }
+  });
+
+  useEffect(() => {
+    let mounted = true;
+
+    Promise.all([getUserProfile(), getAllProducts()]).then(
+      ([user, productList]) => {
+        if (!mounted) return;
+        setProfile(user);
+        setProducts(productList);
+
+        setWeeklyPlan((prev) => {
+          const hasData = DAYS.some((day) => (prev[day] ?? []).length > 0);
+          if (hasData) return prev;
+          return legacyToPlanState(generateSampleWeeklyPlan(productList));
+        });
+      },
+    );
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // Save to localStorage
   useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem("ynot_weekly_plan", JSON.stringify(plan));
-      localStorage.setItem("ynot_is_routine", JSON.stringify(isRoutine));
-    }
-  }, [plan, isRoutine, isInitialized]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(weeklyPlan));
+  }, [weeklyPlan]);
 
-  const addItem = (day: string, item: AnyItem) => {
-    setPlan((prev) => ({
-      ...prev,
-      [day]: prev[day].some((i) => i.id === item.id) ? prev[day] : [...prev[day], item],
-    }));
+  const productsById = useMemo(() => {
+    return products.reduce<Record<string, ProductResponse>>((acc, product) => {
+      acc[product.id] = product;
+      return acc;
+    }, {});
+  }, [products]);
+
+  const selectedDayEntries = useMemo(
+    () => weeklyPlan[selectedDay] ?? [],
+    [weeklyPlan, selectedDay],
+  );
+
+  const quantityById = useMemo(() => {
+    return selectedDayEntries.reduce<Record<string, number>>((acc, entry) => {
+      acc[entry.id] = entry.quantity;
+      return acc;
+    }, {});
+  }, [selectedDayEntries]);
+
+  const selectedDayItems = useMemo(() => {
+    return selectedDayEntries
+      .map((entry) => {
+        const product = productsById[entry.id];
+        if (!product) return null;
+        return { product, quantity: entry.quantity };
+      })
+      .filter(Boolean) as Array<{ product: ProductResponse; quantity: number }>;
+  }, [selectedDayEntries, productsById]);
+
+  const dayTotals = useMemo(() => {
+    return selectedDayItems.reduce(
+      (acc, row) => {
+        const qty = row.quantity;
+        const item = row.product;
+        acc.calories += item.nutrition.calories * qty;
+        acc.protein += item.nutrition.protein * qty;
+        acc.fiber += item.nutrition.fiber * qty;
+        acc.vitaminC += (item.nutrition.vitaminC ?? 0) * qty;
+        acc.calcium += toCalcium(item) * qty;
+        acc.iron += item.nutrition.iron * qty;
+        acc.totalQty += qty;
+        return acc;
+      },
+      {
+        calories: 0,
+        protein: 0,
+        fiber: 0,
+        vitaminC: 0,
+        calcium: 0,
+        iron: 0,
+        totalQty: 0,
+      },
+    );
+  }, [selectedDayItems]);
+
+  const targets = useMemo(() => {
+    if (!profile) {
+      return { protein: 50, fiber: 25, vitaminC: 90, calcium: 1000, iron: 18 };
+    }
+
+    const base = getNutritionTargets(profile);
+    return {
+      protein: base.protein,
+      fiber: base.fiber,
+      vitaminC: 90,
+      calcium: 1000,
+      iron: base.iron,
+    };
+  }, [profile]);
+
+  const filteredItems = useMemo(() => {
+    return products.filter((item) => {
+      const categoryOk = category === "All" || item.category === category;
+      const searchOk = item.name.toLowerCase().includes(search.toLowerCase());
+      return categoryOk && searchOk;
+    });
+  }, [products, search, category]);
+
+  const setItemQuantity = (productId: string, nextQuantity: number) => {
+    setWeeklyPlan((prev) => {
+      const current = prev[selectedDay] ?? [];
+      const existing = current.find((entry) => entry.id === productId);
+
+      if (nextQuantity <= 0) {
+        return {
+          ...prev,
+          [selectedDay]: current.filter((entry) => entry.id !== productId),
+        };
+      }
+
+      if (!existing) {
+        return {
+          ...prev,
+          [selectedDay]: [
+            ...current,
+            { id: productId, quantity: nextQuantity },
+          ],
+        };
+      }
+
+      return {
+        ...prev,
+        [selectedDay]: current.map((entry) =>
+          entry.id === productId ? { ...entry, quantity: nextQuantity } : entry,
+        ),
+      };
+    });
   };
 
-  const removeItem = (day: string, itemId: number) => {
-    setPlan((prev) => ({
-      ...prev,
-      [day]: prev[day].filter((i) => i.id !== itemId),
-    }));
+  const addItemToDay = (productId: string) => {
+    setItemQuantity(productId, (quantityById[productId] ?? 0) + 1);
   };
 
-  const filteredItems = filterCat === "all" ? allItems : allItems.filter((i) => i.category === filterCat);
+  const removeItemFromDay = (productId: string) => {
+    setItemQuantity(productId, (quantityById[productId] ?? 0) - 1);
+  };
 
-  const totalItemsThisWeek = Object.values(plan).reduce((sum, items) => sum + items.length, 0);
+  const selectAllFiltered = () => {
+    setWeeklyPlan((prev) => {
+      const nextEntries = filteredItems.map((item) => ({
+        id: item.id,
+        quantity: quantityById[item.id] ?? 1,
+      }));
+      return { ...prev, [selectedDay]: nextEntries };
+    });
 
-  // Calculate total weekly nutrition
-  const weeklyNutrition = Object.values(plan).flat().reduce((acc, item) => {
-    if (item.nutrition) {
-      acc.vitaminC += item.nutrition.vitaminC || 0;
-      acc.protein += item.nutrition.protein || 0;
-      acc.fiber += item.nutrition.fiber || 0;
-      acc.calcium += item.nutrition.calcium || 0;
-      acc.iron += item.nutrition.iron || 0;
+    addToast(`Selected all filtered items for ${SHORT_DAY[selectedDay]}`);
+  };
+
+  const clearDay = () => {
+    setWeeklyPlan((prev) => ({ ...prev, [selectedDay]: [] }));
+  };
+
+  const autoPlan = () => {
+    const generated = generateSampleWeeklyPlan(products);
+    setWeeklyPlan(legacyToPlanState(generated));
+    addToast("Generated sample weekly plan");
+  };
+
+  const handleCheckout = () => {
+    if (dayTotals.totalQty === 0) {
+      addToast("Add items before checkout", "warning");
+      return;
     }
-    return acc;
-  }, { vitaminC: 0, protein: 0, fiber: 0, calcium: 0, iron: 0 });
-
-  const activeDaysCount = Object.values(plan).filter(items => items.length > 0).length || 1;
+    addToast("Weekly checkout initiated");
+  };
 
   return (
     <PageWrapper>
-      <div className="relative min-h-screen overflow-hidden">
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-950/30 via-transparent to-emerald-950/30" />
-        <div className="absolute top-20 left-1/3 w-[500px] h-[500px] rounded-full bg-violet-500/[0.05] blur-[120px]" />
-
-        <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 py-12 sm:py-16">
-          {/* Header */}
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
-            <div className="text-5xl mb-3 animate-float">📅</div>
-            <h1 className="text-4xl sm:text-5xl font-black mb-2 bg-gradient-to-r from-violet-400 via-purple-300 to-teal-400 bg-clip-text text-transparent">
-              Weekly Routine
-            </h1>
-            <p className="text-white/40 text-base max-w-lg mx-auto">
-              Plan your weekly meals and make healthy eating a habit. Set it once, auto-order every week!
+      <div className="app-page-fit px-3 py-2 overflow-hidden">
+        <section className="surface-card h-full p-2.5 grid grid-rows-[auto_auto_minmax(0,1fr)] gap-2 overflow-hidden">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] font-semibold text-[#7f8c8d] uppercase tracking-[0.12em]">
+              Weekly Diet Planner
             </p>
-          </motion.div>
-
-          {/* Routine Toggle + Stats */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="flex flex-wrap items-center justify-center gap-6 mb-10"
-          >
             <button
-              onClick={() => setIsRoutine(!isRoutine)}
-              className={`glass-card px-5 py-2.5 flex items-center gap-2 text-sm font-medium transition-all cursor-pointer ${
-                isRoutine ? "!border-emerald-500/40 text-emerald-400" : "text-white/60"
-              }`}
+              onClick={autoPlan}
+              className="h-7 px-2.5 rounded-full text-[10px] font-semibold bg-[#eef9f2] text-[#27ae60] border border-[#c7efda]"
             >
-              <span className={`w-10 h-5 rounded-full transition-all duration-300 flex items-center px-0.5 ${
-                isRoutine ? "bg-emerald-500" : "bg-white/10"
-              }`}>
-                <span className={`w-4 h-4 rounded-full bg-white transition-transform duration-300 ${
-                  isRoutine ? "translate-x-5" : "translate-x-0"
-                }`} />
-              </span>
-              Set as Routine
+              Auto Plan
             </button>
-
-            <div className="glass-card px-4 py-2 text-sm text-white/50">
-              📦 <span className="text-white font-bold">{totalItemsThisWeek}</span> items this week
-            </div>
-          </motion.div>
-
-          {/* Weekly Nutrition Tracker */}
-          {totalItemsThisWeek > 0 && (
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mb-10 p-6 glass-card border border-emerald-500/20 bg-gradient-to-r from-emerald-500/5 to-violet-500/5">
-              <h3 className="text-center font-bold text-white mb-6">Aggregate Weekly Nutrition</h3>
-              <div className="flex flex-wrap justify-center gap-6 md:gap-12">
-                <MuiProgressRing label="Vitamin C" value={weeklyNutrition.vitaminC} max={dailyRecommended.vitaminC * activeDaysCount} unit="mg" color="#10b981" />
-                <MuiProgressRing label="Protein" value={weeklyNutrition.protein} max={dailyRecommended.protein * activeDaysCount} unit="g" color="#14b8a6" />
-                <MuiProgressRing label="Fiber" value={weeklyNutrition.fiber} max={dailyRecommended.fiber * activeDaysCount} unit="g" color="#8b5cf6" />
-                <MuiProgressRing label="Calcium" value={weeklyNutrition.calcium} max={dailyRecommended.calcium * activeDaysCount} unit="mg" color="#f59e0b" />
-                <MuiProgressRing label="Iron" value={weeklyNutrition.iron} max={dailyRecommended.iron * activeDaysCount} unit="mg" color="#ef4444" />
-              </div>
-            </motion.div>
-          )}
-
-          {/* Day Tabs */}
-          <div className="flex flex-wrap justify-center gap-2 mb-8">
-            {days.map((day, i) => (
-              <button
-                key={day}
-                onClick={() => setActiveDay(day)}
-                className={`glass-card px-4 py-2.5 text-sm font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                  activeDay === day
-                    ? "!border-violet-500/40 text-violet-400 !bg-violet-500/10"
-                    : "text-white/50 hover:text-white/80"
-                }`}
-              >
-                <span>{dayEmojis[i]}</span>
-                <span className="hidden sm:inline">{day}</span>
-                <span className="sm:hidden">{day.slice(0, 3)}</span>
-                {plan[day].length > 0 && (
-                  <span className="ml-1 w-5 h-5 rounded-full bg-violet-500/30 text-violet-300 text-[11px] font-bold flex items-center justify-center">
-                    {plan[day].length}
-                  </span>
-                )}
-              </button>
-            ))}
           </div>
 
-          {/* Main Content: Day Plan + Add Items */}
-          {/* Main Content: Day Plan + Add Items */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            {/* Day Plan (2/3 width on desktop) */}
-            <div className="lg:col-span-2 glass-card p-6 min-h-[400px] flex flex-col">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex flex-col">
-                  <h3 className="text-xl font-black text-white uppercase tracking-tight">
-                    {activeDay} Plan
-                  </h3>
-                  <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">
-                    {dayEmojis[days.indexOf(activeDay)]} Custom Layout
-                  </span>
-                </div>
+          <div className="grid grid-cols-7 gap-1">
+            {DAYS.map((day) => {
+              const active = day === selectedDay;
+              return (
                 <button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="lg:hidden h-10 px-4 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-black uppercase tracking-widest active:scale-95 transition-all"
+                  key={day}
+                  onClick={() => setSelectedDay(day)}
+                  className={`h-7 rounded-lg border text-[10px] font-semibold ${
+                    active
+                      ? "bg-[#2ecc71] text-white border-[#2ecc71]"
+                      : "bg-white text-[#7f8c8d] border-[#e7ecef]"
+                  }`}
                 >
-                  Edit Plan
+                  {SHORT_DAY[day]}
                 </button>
+              );
+            })}
+          </div>
+
+          <div className="min-h-0 grid grid-rows-[auto_minmax(0,auto)_minmax(0,1fr)] gap-2 overflow-hidden">
+            <div className="rounded-xl border border-[#e7ecef] overflow-hidden">
+              <div className="px-2 py-1.5 bg-[#f8fafb] border-b border-[#e7ecef]">
+                <p className="text-[10px] font-semibold text-[#7f8c8d]">
+                  Weekly Diet Table ({SHORT_DAY[selectedDay]})
+                </p>
               </div>
 
-              {plan[activeDay].length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-4xl mb-4 border border-white/5">🍽️</div>
-                  <p className="text-white font-bold text-sm">Nothing planned for {activeDay}</p>
-                  <p className="text-white/30 text-xs mt-1 max-w-[200px]">Add your favorite essentials to build your weekly healthy routine.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <AnimatePresence mode="popLayout">
-                    {plan[activeDay].map((item) => (
-                      <motion.div
-                        key={item.id}
-                        layout
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] group hover:bg-white/[0.08] transition-colors"
-                      >
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-white/5 to-transparent flex items-center justify-center text-2xl border border-white/5">
-                          {item.emoji}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-white truncate">{item.name}</p>
-                          <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">{item.category}</p>
-                        </div>
-                        <button
-                          onClick={() => removeItem(activeDay, item.id)}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
-                        >
-                          ✕
-                        </button>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-              )}
-            </div>
-
-            {/* Add Items Sidebar (1/3 width on desktop) */}
-            <div className={`flex flex-col gap-4 lg:flex ${sidebarOpen ? "flex" : "hidden"}`}>
-              <div className="glass-card p-5">
-                <h3 className="text-xs font-black text-white/40 uppercase tracking-[0.2em] mb-4">Stock Pantry</h3>
-
-                {/* Category Filter */}
-                <div className="flex flex-wrap gap-1.5 mb-5">
-                  {[
-                    { key: "all", label: "All" },
-                    { key: "vegetable", label: "🥦 Veg" },
-                    { key: "fruit", label: "🍎 Fruit" },
-                    { key: "salad", label: "🥗 Salad" },
-                  ].map((cat) => (
-                    <button
-                      key={cat.key}
-                      onClick={() => setFilterCat(cat.key)}
-                      className={`text-[10px] px-3 py-1.5 rounded-xl font-bold uppercase transition-all cursor-pointer ${
-                        filterCat === cat.key
-                          ? "bg-violet-500 text-black shadow-lg shadow-violet-500/20"
-                          : "bg-white/[0.04] text-white/40 border border-white/[0.08] hover:text-white/80"
-                      }`}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
+              <div className="px-1.5 py-1">
+                <div className="grid grid-cols-[28%_10%_12%_12%_12%_26%] text-[9px] sm:text-[10px] text-[#7f8c8d] font-semibold px-0.5">
+                  <span>Item</span>
+                  <span className="text-right">Qty</span>
+                  <span className="text-right">Cal</span>
+                  <span className="text-right">Prot</span>
+                  <span className="text-right">Fib</span>
+                  <span className="text-right">Primary</span>
                 </div>
 
-                {/* Items List */}
-                <div className="flex flex-col gap-2 max-h-[500px] overflow-y-auto pr-1 no-scrollbar">
-                  {filteredItems.map((item) => {
-                    const isAdded = plan[activeDay].some((i) => i.id === item.id);
+                <div
+                  className="mt-1 overflow-y-auto"
+                  style={{
+                    height: `${TABLE_BODY_HEIGHT_REM}rem`,
+                    minHeight: `${TABLE_BODY_HEIGHT_REM}rem`,
+                  }}
+                >
+                  {selectedDayItems.map((row) => {
+                    const item = row.product;
+                    const qty = row.quantity;
+
                     return (
-                      <button
+                      <div
                         key={item.id}
-                        onClick={() => !isAdded && addItem(activeDay, item)}
-                        disabled={isAdded}
-                        className={`flex items-center gap-3 p-3 rounded-2xl text-left transition-all ${
-                          isAdded
-                            ? "bg-emerald-500/10 border border-emerald-500/20 opacity-60"
-                            : "bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.08] cursor-pointer"
-                        }`}
+                        className="grid grid-cols-[28%_10%_12%_12%_12%_26%] items-center border-t border-[#f0f3f5] text-[9px] sm:text-[10px]"
+                        style={{ minHeight: `${TABLE_ROW_HEIGHT_REM}rem` }}
                       >
-                        <span className="text-xl">{item.emoji}</span>
-                        <div className="flex-1">
-                          <p className={`text-sm font-bold ${isAdded ? 'text-emerald-400' : 'text-white'}`}>{item.name}</p>
-                        </div>
-                        {isAdded ? (
-                          <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] text-black font-black">✓</div>
-                        ) : (
-                          <div className="w-5 h-5 rounded-full border border-white/20 flex items-center justify-center text-[10px] text-white/40">+</div>
-                        )}
-                      </button>
+                        <span className="truncate text-[#1e1e1e] font-medium pr-1">
+                          {item.name}
+                        </span>
+                        <span className="text-right text-[#1e1e1e]">{qty}</span>
+                        <span className="text-right text-[#1e1e1e]">
+                          {(item.nutrition.calories * qty).toFixed(0)}
+                        </span>
+                        <span className="text-right text-[#1e1e1e]">
+                          {(item.nutrition.protein * qty).toFixed(1)}
+                        </span>
+                        <span className="text-right text-[#1e1e1e]">
+                          {(item.nutrition.fiber * qty).toFixed(1)}
+                        </span>
+                        <span className="text-right text-[#7f8c8d] truncate">
+                          {getPrimaryNutrient(item)}
+                        </span>
+                      </div>
                     );
                   })}
+
+                  {selectedDayItems.length === 0 && (
+                    <div className="h-full border-t border-[#f0f3f5] flex items-center justify-center text-[#7f8c8d] text-[10px]">
+                      No items selected
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="px-2 py-1 border-t border-[#d7efe2] bg-[#eef9f2]">
+                <div className="grid grid-cols-5 text-[9px] sm:text-[10px]">
+                  <span className="font-bold text-[#1e1e1e]">TOTAL</span>
+                  <span className="text-right font-bold text-[#1e1e1e]">
+                    {dayTotals.totalQty}
+                  </span>
+                  <span className="text-right font-bold text-[#1e1e1e]">
+                    {dayTotals.calories.toFixed(0)}
+                  </span>
+                  <span className="text-right font-bold text-[#1e1e1e]">
+                    {dayTotals.protein.toFixed(1)}
+                  </span>
+                  <span className="text-right font-bold text-[#1e1e1e]">
+                    {dayTotals.fiber.toFixed(1)}
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Routine Saved Banner */}
-          <AnimatePresence>
-            {isRoutine && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                className="mt-8 glass-card p-4 text-center !border-emerald-500/20"
-              >
-                <p className="text-sm text-emerald-400 font-medium">
-                  ✅ Routine mode is ON — This plan will auto-repeat every week. No need to order daily!
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+            <div className="min-h-0 grid  gap-2 overflow-hidden">
+              <div className="min-h-0">
+                <NutritionRingsCard
+                  compact
+                  title="Aggregate Weekly Nutrition"
+                  metrics={[
+                    {
+                      label: "Vitamin C",
+                      value: dayTotals.vitaminC,
+                      target: targets.vitaminC,
+                      unit: "mg",
+                      color: "#10E6C2",
+                    },
+                    {
+                      label: "Protein",
+                      value: dayTotals.protein,
+                      target: targets.protein,
+                      unit: "g",
+                      color: "#2BC4FF",
+                    },
+                    {
+                      label: "Fiber",
+                      value: dayTotals.fiber,
+                      target: targets.fiber,
+                      unit: "g",
+                      color: "#7B61FF",
+                    },
+                    {
+                      label: "Calcium",
+                      value: dayTotals.calcium,
+                      target: targets.calcium,
+                      unit: "mg",
+                      color: "#FFB020",
+                    },
+                    {
+                      label: "Iron",
+                      value: dayTotals.iron,
+                      target: targets.iron,
+                      unit: "mg",
+                      color: "#FF4E58",
+                    },
+                  ]}
+                />
+              </div>
+
+              <div className="min-h-0 rounded-xl border border-[#e7ecef] bg-white p-2 grid grid-rows-[auto_auto_1fr_auto] gap-1.5 overflow-hidden">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[11px] font-semibold text-[#1e1e1e]">
+                    All Items
+                  </p>
+                  <div className="inline-flex gap-1">
+                    <button
+                      onClick={selectAllFiltered}
+                      className="h-6 px-2 rounded-md text-[10px] font-semibold bg-[#eef9f2] text-[#27ae60] border border-[#c7efda]"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      onClick={clearDay}
+                      className="h-6 px-2 rounded-md text-[10px] font-semibold bg-[#fff5f5] text-[#e74c3c] border border-[#ffd7d2]"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-[1fr_auto] gap-1.5">
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search item"
+                    className="input-field h-7 !py-1 !px-2 text-[10px]"
+                  />
+                  <select
+                    value={category}
+                    onChange={(event) =>
+                      setCategory(event.target.value as ProductCategory | "All")
+                    }
+                    className="input-field h-7 !py-1 !px-2 text-[10px] w-[102px]"
+                  >
+                    <option value="All">All</option>
+                    <option value="Vegetables">Veg</option>
+                    <option value="Fruits">Fruits</option>
+                    <option value="Salads">Salads</option>
+                    <option value="Ice Creams">Ice</option>
+                  </select>
+                </div>
+
+                <div className="min-h-0 overflow-y-auto pr-1">
+                  <div className="grid grid-cols-1 gap-1">
+                    {filteredItems.map((product) => {
+                      const qty = quantityById[product.id] ?? 0;
+
+                      return (
+                        <div
+                          key={product.id}
+                          className="rounded-lg border border-[#edf1f3] px-2 py-1.5 flex items-center justify-between gap-2"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-semibold text-[#1e1e1e] truncate">
+                              {product.name}
+                            </p>
+                            <p className="text-[9px] text-[#7f8c8d]">
+                              {product.category}
+                            </p>
+                          </div>
+
+                          {qty > 0 ? (
+                            <div className="inline-flex items-center gap-1 rounded-md bg-[#eef9f2] border border-[#c7efda] p-0.5">
+                              <button
+                                onClick={() => removeItemFromDay(product.id)}
+                                className="h-5 w-5 rounded bg-white text-[#27ae60] text-[11px] font-bold"
+                              >
+                                -
+                              </button>
+                              <span className="min-w-4 text-center text-[10px] font-semibold text-[#1e1e1e]">
+                                {qty}
+                              </span>
+                              <button
+                                onClick={() => addItemToDay(product.id)}
+                                className="h-5 w-5 rounded bg-white text-[#27ae60] text-[11px] font-bold"
+                              >
+                                +
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => addItemToDay(product.id)}
+                              className="h-6 px-2 rounded-md text-[10px] font-semibold bg-[#eef9f2] text-[#27ae60] border border-[#c7efda]"
+                            >
+                              Add
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {filteredItems.length === 0 && (
+                      <p className="text-[10px] text-[#7f8c8d] text-center py-2">
+                        No items found for current filter
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleCheckout}
+                  className="btn-primary h-8 text-xs"
+                >
+                  Checkout Weekly Plan
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </PageWrapper>
   );

@@ -1,0 +1,358 @@
+{
+  "users": [
+    {
+      "id": "u1",
+      "name": "Rahul",
+      "weight": 72,
+      "height": 170,
+      "age": 25,
+      "activityLevel": "moderate",
+      "city": "Bengaluru"
+    }
+  ],
+  "products": [
+    {
+      "id": "p1",
+      "name": "Spinach",
+      "category": "Vegetables",
+      "price": 30,
+      "unit": "250g",
+      "image": "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=900&auto=format&fit=crop",
+      "description": "Fresh iron-rich spinach leaves",
+      "popularity": 88,
+      "healthBenefits": ["Iron boost", "High fiber", "Low calorie"],
+      "nutrition": {
+        "calories": 23,
+        "protein": 2.9,
+        "fiber": 2.2,
+        "iron": 15,
+        "potassium": 558,
+        "vitaminC": 28
+      }
+    },
+    {
+      "id": "p2",
+      "name": "Banana",
+      "category": "Fruits",
+      "price": 50,
+      "unit": "1kg",
+      "image": "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=900&auto=format&fit=crop",
+      "description": "Farm fresh banana bunch",
+      "popularity": 92,
+      "healthBenefits": ["Energy quick start", "Potassium rich"],
+      "nutrition": {
+        "calories": 89,
+        "protein": 1.1,
+        "fiber": 2.6,
+        "iron": 1,
+        "potassium": 358,
+        "vitaminC": 9
+      }
+    },
+    {
+      "id": "p3",
+      "name": "Broccoli",
+      "category": "Vegetables",
+      "price": 64,
+      "unit": "500g",
+      "image": "https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=900&auto=format&fit=crop",
+      "description": "Crunchy broccoli florets",
+      "popularity": 77,
+      "healthBenefits": ["Immunity support", "Vitamin C source"],
+      "nutrition": {
+        "calories": 34,
+        "protein": 2.8,
+        "fiber": 2.6,
+        "iron": 0.7,
+        "potassium": 316,
+        "vitaminC": 89
+      }
+    },
+    {
+      "id": "p4",
+      "name": "Carrot",
+      "category": "Vegetables",
+      "price": 36,
+      "unit": "500g",
+      "image": "https://images.unsplash.com/photo-1447175008436-054170c2e979?w=900&auto=format&fit=crop",
+      "description": "Sweet crunchy carrots",
+      "popularity": 70,
+      "healthBenefits": ["Eye health", "Skin support"],
+      "nutrition": {
+        "calories": 41,
+        "protein": 0.9,
+        "fiber": 2.8,
+        "iron": 0.3,
+        "potassium": 320,
+        "vitaminC": 5
+      }
+    },
+    {
+      "id": "p5",
+      "name": "Apple",
+      "category": "Fruits",
+      "price": 120,
+      "unit": "1kg",
+      "image": "https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=900&auto=format&fit=crop",
+      "description": "Juicy red apples",
+      "popularity": 80,
+      "healthBenefits": ["Digestive support", "Daily snacking"],
+      "nutrition": {
+        "calories": 52,
+        "protein": 0.3,
+        "fiber": 2.4,
+        "iron": 0.1,
+        "potassium": 107,
+        "vitaminC": 4.6
+      }
+    },
+    {
+      "id": "p6",
+      "name": "Orange",
+      "category": "Fruits",
+      "price": 72,
+      "unit": "1kg",
+      "image": "https://images.unsplash.com/photo-1547514701-42782101795e?w=900&auto=format&fit=crop",
+      "description": "Citrus vitamin C oranges",
+      "popularity": 68,
+      "healthBenefits": ["Vitamin C", "Hydration"],
+      "nutrition": {
+        "calories": 47,
+        "protein": 0.9,
+        "fiber": 2.4,
+        "iron": 0.1,
+        "potassium": 181,
+        "vitaminC": 53
+      }
+    },
+    {
+      "id": "p7",
+      "name": "Greek Salad Bowl",
+      "category": "Salads",
+      "price": 180,
+      "unit": "1 bowl",
+      "image": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=900&auto=format&fit=crop",
+      "description": "Olive, cucumber and feta salad",
+      "popularity": 74,
+      "healthBenefits": ["Balanced meal", "High fiber"],
+      "nutrition": {
+        "calories": 150,
+        "protein": 6,
+        "fiber": 5,
+        "iron": 1.4,
+        "potassium": 240,
+        "vitaminC": 18
+      }
+    },
+    {
+      "id": "p8",
+      "name": "Quinoa Power Bowl",
+      "category": "Salads",
+      "price": 220,
+      "unit": "1 bowl",
+      "image": "https://images.unsplash.com/photo-1543353071-087092ec393a?w=900&auto=format&fit=crop",
+      "description": "Quinoa, avocado and chickpea bowl",
+      "popularity": 83,
+      "healthBenefits": ["Protein rich", "Meal replacement"],
+      "nutrition": {
+        "calories": 210,
+        "protein": 9,
+        "fiber": 8,
+        "iron": 2.7,
+        "potassium": 430,
+        "vitaminC": 24
+      }
+    },
+    {
+      "id": "p9",
+      "name": "Detox Green Salad",
+      "category": "Salads",
+      "price": 190,
+      "unit": "1 bowl",
+      "image": "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=900&auto=format&fit=crop",
+      "description": "Leafy greens with lemon dressing",
+      "popularity": 72,
+      "healthBenefits": ["Detox support", "Fiber rich"],
+      "nutrition": {
+        "calories": 128,
+        "protein": 5.2,
+        "fiber": 7.1,
+        "iron": 2.3,
+        "potassium": 488,
+        "vitaminC": 35
+      }
+    },
+    {
+      "id": "p10",
+      "name": "Mango Sorbet",
+      "category": "Ice Creams",
+      "price": 149,
+      "unit": "1 tub",
+      "image": "https://images.unsplash.com/photo-1561845730-208ad5910553?w=900&auto=format&fit=crop",
+      "description": "Dairy-free frozen mango sorbet",
+      "popularity": 66,
+      "healthBenefits": ["Summer cooler", "Lighter dessert"],
+      "nutrition": {
+        "calories": 130,
+        "protein": 1.5,
+        "fiber": 1.2,
+        "iron": 0.4,
+        "potassium": 180,
+        "vitaminC": 16
+      }
+    },
+    {
+      "id": "p11",
+      "name": "Vanilla Ice Cream",
+      "category": "Ice Creams",
+      "price": 159,
+      "unit": "1 tub",
+      "image": "https://images.unsplash.com/photo-1501443762994-82bd5dabb8d2?w=900&auto=format&fit=crop",
+      "description": "Classic vanilla dessert tub",
+      "popularity": 63,
+      "healthBenefits": ["Comfort treat"],
+      "nutrition": {
+        "calories": 207,
+        "protein": 3.5,
+        "fiber": 0,
+        "iron": 0.1,
+        "potassium": 131,
+        "vitaminC": 0
+      }
+    },
+    {
+      "id": "p12",
+      "name": "Berry Yogurt Cup",
+      "category": "Fruits",
+      "price": 95,
+      "unit": "200g",
+      "image": "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=900&auto=format&fit=crop",
+      "description": "Berry yogurt protein snack",
+      "popularity": 79,
+      "healthBenefits": ["Protein snack", "Gut friendly"],
+      "nutrition": {
+        "calories": 112,
+        "protein": 8,
+        "fiber": 3,
+        "iron": 0.8,
+        "potassium": 260,
+        "vitaminC": 12
+      }
+    }
+  ],
+  "orders": [
+    {
+      "id": "o1001",
+      "userId": "u1",
+      "orderedAt": "2026-02-22",
+      "status": "Delivered",
+      "total": 340,
+      "items": [
+        {"productId": "p1", "quantity": 2, "price": 30},
+        {"productId": "p2", "quantity": 1, "price": 50},
+        {"productId": "p7", "quantity": 1, "price": 180}
+      ]
+    },
+    {
+      "id": "o1002",
+      "userId": "u1",
+      "orderedAt": "2026-02-19",
+      "status": "Delivered",
+      "total": 292,
+      "items": [
+        {"productId": "p3", "quantity": 1, "price": 64},
+        {"productId": "p5", "quantity": 1, "price": 120},
+        {"productId": "p10", "quantity": 1, "price": 149}
+      ]
+    },
+    {
+      "id": "o1003",
+      "userId": "u1",
+      "orderedAt": "2026-02-17",
+      "status": "Delivered",
+      "total": 256,
+      "items": [
+        {"productId": "p4", "quantity": 2, "price": 36},
+        {"productId": "p8", "quantity": 1, "price": 220}
+      ]
+    },
+    {
+      "id": "o1004",
+      "userId": "u1",
+      "orderedAt": "2026-02-14",
+      "status": "Delivered",
+      "total": 239,
+      "items": [
+        {"productId": "p6", "quantity": 1, "price": 72},
+        {"productId": "p9", "quantity": 1, "price": 190}
+      ]
+    },
+    {
+      "id": "o1005",
+      "userId": "u1",
+      "orderedAt": "2026-02-11",
+      "status": "Delivered",
+      "total": 179,
+      "items": [
+        {"productId": "p11", "quantity": 1, "price": 159},
+        {"productId": "p1", "quantity": 1, "price": 30}
+      ]
+    },
+    {
+      "id": "o1006",
+      "userId": "u1",
+      "orderedAt": "2026-02-08",
+      "status": "Delivered",
+      "total": 267,
+      "items": [
+        {"productId": "p2", "quantity": 1, "price": 50},
+        {"productId": "p8", "quantity": 1, "price": 220}
+      ]
+    },
+    {
+      "id": "o1007",
+      "userId": "u1",
+      "orderedAt": "2026-02-05",
+      "status": "Delivered",
+      "total": 311,
+      "items": [
+        {"productId": "p5", "quantity": 1, "price": 120},
+        {"productId": "p7", "quantity": 1, "price": 180}
+      ]
+    },
+    {
+      "id": "o1008",
+      "userId": "u1",
+      "orderedAt": "2026-02-03",
+      "status": "Delivered",
+      "total": 178,
+      "items": [
+        {"productId": "p4", "quantity": 1, "price": 36},
+        {"productId": "p12", "quantity": 1, "price": 95}
+      ]
+    },
+    {
+      "id": "o1009",
+      "userId": "u1",
+      "orderedAt": "2026-01-30",
+      "status": "Delivered",
+      "total": 274,
+      "items": [
+        {"productId": "p3", "quantity": 1, "price": 64},
+        {"productId": "p2", "quantity": 1, "price": 50},
+        {"productId": "p10", "quantity": 1, "price": 149}
+      ]
+    },
+    {
+      "id": "o1010",
+      "userId": "u1",
+      "orderedAt": "2026-01-27",
+      "status": "Delivered",
+      "total": 250,
+      "items": [
+        {"productId": "p1", "quantity": 2, "price": 30},
+        {"productId": "p9", "quantity": 1, "price": 190}
+      ]
+    }
+  ]
+}

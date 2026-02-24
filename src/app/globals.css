@@ -1,149 +1,135 @@
 @import "tailwindcss";
 
-/* ─── Premium Design Tokens ─── */
 :root {
-  --color-emerald-glow: rgba(16, 185, 129, 0.5);
-  --color-teal-glow: rgba(20, 184, 166, 0.4);
-  --color-purple-glow: rgba(139, 92, 246, 0.3);
-  --color-pink-glow: rgba(236, 72, 153, 0.4);
-  
-  --glass-bg: rgba(255, 255, 255, 0.04);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-hover: rgba(255, 255, 255, 0.1);
-  --glass-blur: 24px;
-  
-  --card-radius-xl: 2rem;
-  --card-radius-lg: 1.5rem;
-  --card-radius-md: 1rem;
-  
+  color-scheme: light;
+  --color-primary: #2ecc71;
+  --color-secondary: #27ae60;
+  --color-background: #f7f8fa;
+  --color-card: #ffffff;
+  --color-text-primary: #1e1e1e;
+  --color-text-secondary: #7f8c8d;
+  --color-border: #e7ecef;
+  --shadow-soft: 0 10px 28px rgba(235, 238, 241, 0.08);
+  --radius-base: 12px;
+
   --font-heading: var(--font-outfit), sans-serif;
   --font-body: var(--font-inter), sans-serif;
+  --app-navbar-height: 68px;
+  --app-bottomnav-height: 68px;
+  --app-mobile-max-width: 400px;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
+  margin: 0;
   font-family: var(--font-body);
+  color: var(--color-text-primary);
+  background-color: var(--color-background);
+  background:
+    radial-gradient(circle at 20% 0%, #e7f7ef 0%, transparent 45%),
+    radial-gradient(circle at 90% 10%, #edf8ff 0%, transparent 35%),
+    var(--color-background);
 }
 
-h1, h2, h3, h4, .font-black {
+html,
+body {
+  background-color: var(--color-background);
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-heading {
   font-family: var(--font-heading);
 }
 
-/* ─── Layout Utilities ─── */
-@layer utilities {
-  .mobile-container {
-    max-width: 480px;
-    margin-left: auto;
-    margin-right: auto;
-    min-height: 100vh;
-    background-color: black;
-    position: relative;
-    box-shadow: 0 0 100px rgba(0,0,0,0.5);
-  }
-  
-  .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
-
-/* ─── Scrollbar ─── */
-::-webkit-scrollbar { width: 0px; } 
-
-@layer utilities {
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-}
-
-/* ─── Glassmorphism Card ─── */
-@layer components {
-  .glass-card {
-    backdrop-filter: blur(var(--glass-blur));
-    border-radius: var(--card-radius-md);
-    border: 1px solid var(--glass-border);
-    background: var(--glass-bg);
-    transition: all 400ms cubic-bezier(0.23, 1, 0.32, 1);
-  }
-  
-  .glass-card:active {
-    background: var(--glass-hover);
-    border-color: rgba(16, 185, 129, 0.2);
-    transform: scale(0.985);
-  }
-}
-
-/* ─── Shimmer Effect ─── */
-@keyframes shimmer {
-  0% { transform: translateX(-100%) skewX(-20deg); }
-  100% { transform: translateX(200%) skewX(-20deg); }
-}
-.group-hover\:animate-shimmer {
+.mobile-container {
+  width: 100%;
+  max-width: var(--app-mobile-max-width);
+  margin: 0 auto;
+  min-height: 100dvh;
+  background: var(--color-background);
   position: relative;
 }
-.group-hover\:animate-shimmer::after {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; width: 50%; height: 100%;
-  background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
-  animation: shimmer 1s infinite;
-}
 
-/* ─── Float Animation ─── */
-@keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-10px) rotate(2deg); }
-}
-.animate-float {
-  animation: float 4s ease-in-out infinite;
-}
-
-/* ─── Premium Buttons ─── */
-@layer components {
-  .btn-premium {
-    padding: 0.75rem 1.5rem;
-    border-radius: var(--card-radius-md);
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    background: linear-gradient(135deg, #10b981, #059669);
-    color: black;
-    transition: all 300ms cubic-bezier(0.23, 1, 0.32, 1);
-    border: none;
-    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-  
-  .btn-premium:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(16, 185, 129, 0.4);
-    filter: brightness(1.1);
-  }
-  
-  .btn-premium:active {
-    transform: translateY(0) scale(0.95);
+@media (min-width: 768px) {
+  .mobile-container {
+    box-shadow: 0 16px 40px rgba(24, 36, 56, 0.08);
+    border-left: 1px solid #e8eef3;
+    border-right: 1px solid #e8eef3;
   }
 }
 
-/* ─── Text Glow ─── */
-.text-shadow-glow {
-  text-shadow: 0 0 15px var(--color-emerald-glow);
+.app-main {
+  min-height: calc(100dvh - var(--app-navbar-height));
 }
 
-/* ─── Category Badge ─── */
-.category-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 99px;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  color: #10b981;
-  font-size: 0.65rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+.app-page-fit {
+  height: calc(
+    100dvh - var(--app-navbar-height) - var(--app-bottomnav-height) -
+      env(safe-area-inset-bottom)
+  );
+  min-height: 0;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.surface-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-base);
+  box-shadow: var(--shadow-soft);
+}
+
+.soft-pill {
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+}
+
+.btn-primary {
+  border: 0;
+  background: linear-gradient(
+    180deg,
+    var(--color-primary),
+    var(--color-secondary)
+  );
+  color: #fff;
+  border-radius: 12px;
+  font-weight: 700;
+  transition: transform 0.2s ease;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.input-field {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text-primary);
+  padding: 0.7rem 0.85rem;
+  outline: none;
+}
+
+.input-field:focus {
+  border-color: #79dca2;
+  box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.15);
 }

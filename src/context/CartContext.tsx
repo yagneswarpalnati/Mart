@@ -1,132 +1,163 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
+import { ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";
+import type { NutritionResponse } from "@/types/contracts";
 
-// ─── Types ────────────────────────────────────────
 export interface CartItem {
-  id: number;
+  id: string;
   name: string;
-  emoji: string;
+  category: string;
   price: number;
+  unit: string;
+  image?: string;
   quantity: number;
-  category: "vegetable" | "fruit" | "salad" | "icecream";
-  unit: string; // "kg" | "bowl" | "scoop"
+  nutrition: NutritionResponse;
 }
 
 interface CartContextType {
   items: CartItem[];
   addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
-  removeItem: (id: number) => void;
-  updateQuantity: (id: number, quantity: number) => void;
+  removeItem: (id: string) => void;
+  updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
-  getItemQuantity: (id: number) => number;
+  getItemQuantity: (id: string) => number;
 }
 
-const CartContext = createContext<CartContextType | null>(null);
-
-// ─── Toast State (global) ─────────────────────────
 export interface Toast {
   id: string;
   message: string;
-  emoji: string;
   type: "success" | "info" | "warning";
 }
 
 interface ToastContextType {
   toasts: Toast[];
-  addToast: (message: string, emoji?: string, type?: Toast["type"]) => void;
+  addToast: (message: string, type?: Toast["type"]) => void;
   removeToast: (id: string) => void;
 }
 
+const CartContext = createContext<CartContextType | null>(null);
 const ToastContext = createContext<ToastContextType | null>(null);
 
-// ─── Cart Provider ────────────────────────────────
+const STORAGE_KEY = "mart_cart_items_v2";
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  // Load from localStorage on mount
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("ynot_cart");
-      if (saved) setItems(JSON.parse(saved));
-    } catch (e) {
-      console.error("Failed to load cart from localStorage", e);
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as CartItem[];
+        if (Array.isArray(parsed)) {
+          setItems(parsed);
+        }
+      }
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+    } finally {
+      setReady(true);
     }
-    setIsInitialized(true);
   }, []);
 
-  // Save to localStorage on change
   useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem("ynot_cart", JSON.stringify(items));
+    if (ready) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     }
-  }, [items, isInitialized]);
+  }, [items, ready]);
 
-  const addToast = useCallback((message: string, emoji = "✅", type: Toast["type"] = "success") => {
-    const id = Date.now().toString() + Math.random().toString(36).slice(2);
-    setToasts((prev) => [...prev, { id, message, emoji, type }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
+  const addToast = useCallback((message: string, type: Toast["type"] = "success") => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    }, 2800);
   }, []);
 
   const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
-  const addItem = useCallback((item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
-    const qty = item.quantity || 1;
-    setItems((prev) => {
-      const existing = prev.find((i) => i.id === item.id);
-      if (existing) {
-        return prev.map((i) => i.id === item.id ? { ...i, quantity: i.quantity + qty } : i);
-      }
-      return [...prev, { ...item, quantity: qty } as CartItem];
-    });
-    addToast(`${item.name} added to cart!`, item.emoji);
-  }, [addToast]);
+  const addItem = useCallback(
+    (item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
+      const quantity = item.quantity ?? 1;
+      setItems((prev) => {
+        const existing = prev.find((entry) => entry.id === item.id);
+        if (existing) {
+          return prev.map((entry) =>
+            entry.id === item.id ? { ...entry, quantity: entry.quantity + quantity } : entry,
+          );
+        }
 
-  const removeItem = useCallback((id: number) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
+        return [...prev, { ...item, quantity }];
+      });
+      addToast(`${item.name} added to cart`);
+    },
+    [addToast],
+  );
+
+  const removeItem = useCallback((id: string) => {
+    setItems((prev) => prev.filter((entry) => entry.id !== id));
   }, []);
 
-  const updateQuantity = useCallback((id: number, quantity: number) => {
+  const updateQuantity = useCallback((id: string, quantity: number) => {
     if (quantity <= 0) {
-      setItems((prev) => prev.filter((i) => i.id !== id));
+      setItems((prev) => prev.filter((entry) => entry.id !== id));
       return;
     }
-    setItems((prev) => prev.map((i) => i.id === id ? { ...i, quantity } : i));
+
+    setItems((prev) =>
+      prev.map((entry) => (entry.id === id ? { ...entry, quantity } : entry)),
+    );
   }, []);
 
-  const clearCart = useCallback(() => setItems([]), []);
+  const clearCart = useCallback(() => {
+    setItems([]);
+  }, []);
 
-  const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
-  const totalPrice = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const totalItems = items.reduce((sum, entry) => sum + entry.quantity, 0);
+  const totalPrice = items.reduce((sum, entry) => sum + entry.price * entry.quantity, 0);
 
-  const getItemQuantity = useCallback((id: number) => {
-    return items.find((i) => i.id === id)?.quantity || 0;
-  }, [items]);
+  const getItemQuantity = useCallback(
+    (id: string) => items.find((entry) => entry.id === id)?.quantity ?? 0,
+    [items],
+  );
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, totalItems, totalPrice, getItemQuantity }}>
-      <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
-        {children}
-      </ToastContext.Provider>
+    <CartContext.Provider
+      value={{
+        items,
+        addItem,
+        removeItem,
+        updateQuantity,
+        clearCart,
+        totalItems,
+        totalPrice,
+        getItemQuantity,
+      }}
+    >
+      <ToastContext.Provider value={{ toasts, addToast, removeToast }}>{children}</ToastContext.Provider>
     </CartContext.Provider>
   );
 }
 
-// ─── Hooks ────────────────────────────────────────
 export function useCart() {
-  const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used within CartProvider");
-  return ctx;
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error("useCart must be used within CartProvider");
+  }
+
+  return context;
 }
 
 export function useToast() {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error("useToast must be used within CartProvider");
-  return ctx;
+  const context = useContext(ToastContext);
+  if (!context) {
+    throw new Error("useToast must be used within CartProvider");
+  }
+
+  return context;
 }

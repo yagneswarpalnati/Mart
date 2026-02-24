@@ -1,44 +1,37 @@
 "use client";
 
-import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
+import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 import { ReactNode } from "react";
 
 const muiTheme = createTheme({
   palette: {
-    mode: "dark",
+    mode: "light",
     primary: {
-      main: "#10b981", // Emerald 500
+      main: "#2ECC71",
     },
     secondary: {
-      main: "#a855f7", // Purple 500
+      main: "#27AE60",
     },
     background: {
-      default: "#000000",
-      paper: "rgba(16, 185, 129, 0.05)",
+      default: "#F7F8FA",
+      paper: "#FFFFFF",
     },
+    text: {
+      primary: "#1E1E1E",
+      secondary: "#7F8C8D",
+    },
+  },
+  shape: {
+    borderRadius: 12,
   },
   typography: {
     fontFamily: '"Outfit", "Inter", sans-serif',
   },
-  shape: {
-    borderRadius: 16,
-  },
   components: {
-    MuiButton: {
+    MuiCssBaseline: {
       styleOverrides: {
-        root: {
-          textTransform: "none",
-          fontWeight: 700,
-          borderRadius: 12,
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          backgroundImage: "none",
-          border: "1px solid rgba(16, 185, 129, 0.2)",
-          backdropFilter: "blur(16px)",
+        body: {
+          backgroundColor: "#F7F8FA",
         },
       },
     },
