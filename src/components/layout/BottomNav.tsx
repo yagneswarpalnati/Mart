@@ -37,14 +37,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <div
-      className="fixed bottom-0 z-[60] border-t border-[#e7ecef] bg-white pb-safe"
-      style={{
-        width: "min(100vw, var(--app-mobile-max-width))",
-        left: "50%",
-        transform: "translateX(-50%)",
-      }}
-    >
+    <div className="fixed bottom-0 left-0 right-0 z-[60] border-t border-[#e7ecef] bg-white pb-safe md:left-1/2 md:right-auto md:w-[92vw] md:max-w-[440px] md:-translate-x-1/2">
       <div className="w-full flex items-center justify-around px-2 py-2.5">
         {navItems.map((item) => {
           const isCatalogRoute =

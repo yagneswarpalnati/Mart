@@ -16,7 +16,7 @@
   --font-body: var(--font-inter), sans-serif;
   --app-navbar-height: 68px;
   --app-bottomnav-height: 68px;
-  --app-mobile-max-width: 400px;
+  --app-shell-max-width: 440px;
 }
 
 * {
@@ -49,7 +49,7 @@ h4,
 
 .mobile-container {
   width: 100%;
-  max-width: var(--app-mobile-max-width);
+  max-width: 100%;
   margin: 0 auto;
   min-height: 100dvh;
   background: var(--color-background);
@@ -58,6 +58,7 @@ h4,
 
 @media (min-width: 768px) {
   .mobile-container {
+    max-width: min(92vw, var(--app-shell-max-width));
     box-shadow: 0 16px 40px rgba(24, 36, 56, 0.08);
     border-left: 1px solid #e8eef3;
     border-right: 1px solid #e8eef3;
@@ -66,6 +67,9 @@ h4,
 
 .app-main {
   min-height: calc(100dvh - var(--app-navbar-height));
+  padding-bottom: calc(
+    var(--app-bottomnav-height) + env(safe-area-inset-bottom)
+  );
 }
 
 .app-page-fit {
