@@ -107,90 +107,88 @@ export default function CartPage() {
                 </button>
               </div>
 
-              {items.length > 0 && (
-                <div className="mt-4 rounded-xl border border-[#e7ecef] overflow-hidden">
-                  <div className="grid grid-cols-[42%_22%_18%_18%] px-2 py-1.5 bg-[#f8fafb] border-b border-[#e7ecef] text-[10px] font-semibold text-[#7f8c8d]">
-                    <span>Item</span>
-                    <span className="text-center">Quantity</span>
-                    <span className="text-right">Price</span>
-                    <span className="text-right">Total</span>
-                  </div>
+              <div className="mt-4 rounded-xl border border-[#e7ecef] overflow-hidden overflow-x-hidden">
+                <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] px-2 py-1.5 bg-[#f8fafb] border-b border-[#e7ecef] text-[10px] font-semibold text-[#7f8c8d]">
+                  <span>Item</span>
+                  <span className="text-center">Quantity</span>
+                  <span className="text-right">Unit Price</span>
+                  <span className="text-right">Subtotal</span>
+                </div>
 
-                  <div
-                    className="overflow-y-auto px-2"
-                    style={{
-                      height: `${CART_VISIBLE_ROWS * CART_ROW_HEIGHT_REM}rem`,
-                      minHeight: `${CART_VISIBLE_ROWS * CART_ROW_HEIGHT_REM}rem`,
-                    }}
-                  >
-                    {items.map((item) => (
-                      <article
-                        key={item.id}
-                        className="grid grid-cols-[42%_22%_18%_18%] items-center gap-1 border-t border-[#f0f3f5]"
-                        style={{ minHeight: `${CART_ROW_HEIGHT_REM}rem` }}
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="h-9 w-9 rounded-md object-cover bg-[#f3f5f6] flex-shrink-0"
-                          />
-                          <div className="min-w-0">
-                            <p className="text-[11px] font-semibold text-[#1e1e1e] truncate">
-                              {item.name}
-                            </p>
-                            <p className="text-[10px] text-[#7f8c8d] truncate">
-                              {item.unit}
-                            </p>
-                          </div>
+                <div
+                  className="overflow-y-auto px-2 overflow-x-hidden"
+                  style={{
+                    height: `${CART_VISIBLE_ROWS * CART_ROW_HEIGHT_REM}rem`,
+                    minHeight: `${CART_VISIBLE_ROWS * CART_ROW_HEIGHT_REM}rem`,
+                  }}
+                >
+                  {items.map((item) => (
+                    <article
+                      key={item.id}
+                      className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-1 border-t border-[#f0f3f5]"
+                      style={{ minHeight: `${CART_ROW_HEIGHT_REM}rem` }}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="h-9 w-9 rounded-md object-cover bg-[#f3f5f6] flex-shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-semibold text-[#1e1e1e] truncate">
+                            {item.name}
+                          </p>
+                          <p className="text-[10px] text-[#7f8c8d] truncate">
+                            {item.unit}
+                          </p>
                         </div>
+                      </div>
 
-                        <div className="justify-self-center inline-flex items-center gap-1 rounded-md border border-[#d5f1e2] bg-[#eef9f2] p-0.5">
-                          <button
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity - 1)
-                            }
-                            className="h-5 w-5 rounded bg-white text-[#27ae60] text-[11px] font-bold"
-                          >
-                            -
-                          </button>
-                          <span className="text-[10px] font-semibold text-[#27ae60] min-w-3 text-center">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity + 1)
-                            }
-                            className="h-5 w-5 rounded bg-white text-[#27ae60] text-[11px] font-bold"
-                          >
-                            +
-                          </button>
-                        </div>
+                      <div className="justify-self-center inline-flex items-center gap-1 rounded-md border border-[#d5f1e2] bg-[#eef9f2] p-0.5">
+                        <button
+                          onClick={() =>
+                            updateQuantity(item.id, item.quantity - 1)
+                          }
+                          className="h-5 w-5 rounded bg-white text-[#27ae60] text-[11px] font-bold"
+                        >
+                          -
+                        </button>
+                        <span className="text-[10px] font-semibold text-[#27ae60] min-w-3 text-center">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() =>
+                            updateQuantity(item.id, item.quantity + 1)
+                          }
+                          className="h-5 w-5 rounded bg-white text-[#27ae60] text-[11px] font-bold"
+                        >
+                          +
+                        </button>
+                      </div>
 
-                        <p className="text-[11px] text-right text-[#1e1e1e]">
-                          Rs {item.price}
-                        </p>
-                        <p className="text-[11px] text-right font-semibold text-[#1e1e1e]">
-                          Rs {(item.price * item.quantity).toFixed(0)}
-                        </p>
-                      </article>
-                    ))}
-                  </div>
+                      <p className="text-[11px] text-right text-[#1e1e1e]">
+                        Rs {item.price}
+                      </p>
+                      <p className="text-[11px] text-right font-semibold text-[#1e1e1e]">
+                        Rs {(item.price * item.quantity).toFixed(0)}
+                      </p>
+                    </article>
+                  ))}
+                </div>
 
-                  <div className="px-2 py-1 border-t border-[#d7efe2] bg-[#eef9f2]">
-                    <div className="grid grid-cols-[42%_22%_18%_18%] text-[10px]">
-                      <span className="font-bold text-[#1e1e1e]">TOTAL</span>
-                      <span className="font-bold text-[#1e1e1e] text-center">
-                        {totalItems}
-                      </span>
-                      <span />
-                      <span className="font-bold text-[#1e1e1e] text-right">
-                        Rs {totalPrice.toFixed(0)}
-                      </span>
-                    </div>
+                <div className="px-2 py-1 border-t border-[#d7efe2] bg-[#eef9f2]">
+                  <div className="grid grid-cols-[42%_22%_18%_18%] text-[10px]">
+                    <span className="font-bold text-[#1e1e1e]">TOTAL</span>
+                    <span className="font-bold text-[#1e1e1e] text-center">
+                      {totalItems}
+                    </span>
+                    <span />
+                    <span className="font-bold text-[#1e1e1e] text-right">
+                      Rs {totalPrice.toFixed(0)}
+                    </span>
                   </div>
                 </div>
-              )}
+              </div>
             </section>
             <section className="h-[360px]">
               <NutritionRingsCard
