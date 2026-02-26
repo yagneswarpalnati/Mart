@@ -83,12 +83,54 @@ export default function CartPage() {
             <p className="mt-3 text-sm font-semibold text-[#1e1e1e]">
               Your cart is empty
             </p>
-            <p className="text-xs text-[#7f8c8d] mt-1">
+            <Link href='/vegetables'>
               Add fresh items to stay healthy
-            </p>
+            </Link>
           </div>
         ) : (
           <>
+            <section className="h-[360px]">
+              <NutritionRingsCard
+                title="Aggregate Cart Nutrition"
+                metrics={[
+                  {
+                    label: "Vitamin C",
+                    value: aggregate.vitaminC,
+                    target: targets.vitaminC,
+                    unit: "mg",
+                    color: "#10E6C2",
+                  },
+                  {
+                    label: "Protein",
+                    value: aggregate.protein,
+                    target: targets.protein,
+                    unit: "g",
+                    color: "#2BC4FF",
+                  },
+                  {
+                    label: "Fiber",
+                    value: aggregate.fiber,
+                    target: targets.fiber,
+                    unit: "g",
+                    color: "#7B61FF",
+                  },
+                  {
+                    label: "Calcium",
+                    value: aggregate.calcium,
+                    target: targets.calcium,
+                    unit: "mg",
+                    color: "#FFB020",
+                  },
+                  {
+                    label: "Iron",
+                    value: aggregate.iron,
+                    target: targets.iron,
+                    unit: "mg",
+                    color: "#FF4E58",
+                  },
+                ]}
+              />
+            </section>
             <section className="surface-card p-4">
               <div className="flex justify-between items-center">
                 <div>
@@ -189,48 +231,6 @@ export default function CartPage() {
                   </div>
                 </div>
               </div>
-            </section>
-            <section className="h-[360px]">
-              <NutritionRingsCard
-                title="Aggregate Weekly Nutrition"
-                metrics={[
-                  {
-                    label: "Vitamin C",
-                    value: aggregate.vitaminC,
-                    target: targets.vitaminC,
-                    unit: "mg",
-                    color: "#10E6C2",
-                  },
-                  {
-                    label: "Protein",
-                    value: aggregate.protein,
-                    target: targets.protein,
-                    unit: "g",
-                    color: "#2BC4FF",
-                  },
-                  {
-                    label: "Fiber",
-                    value: aggregate.fiber,
-                    target: targets.fiber,
-                    unit: "g",
-                    color: "#7B61FF",
-                  },
-                  {
-                    label: "Calcium",
-                    value: aggregate.calcium,
-                    target: targets.calcium,
-                    unit: "mg",
-                    color: "#FFB020",
-                  },
-                  {
-                    label: "Iron",
-                    value: aggregate.iron,
-                    target: targets.iron,
-                    unit: "mg",
-                    color: "#FF4E58",
-                  },
-                ]}
-              />
             </section>
 
             <section className="surface-card p-4">
